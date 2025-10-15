@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Download, FileJson, FileSpreadsheet, Image as ImageIcon, FileCode } from "lucide-react";
+import { Download, FileJson, FileSpreadsheet, FileCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import L from "leaflet";
 
 interface MarkerData {
   id: number;
@@ -18,7 +16,7 @@ interface MarkerData {
 
 interface ExportPanelProps {
   markers: MarkerData[];
-  map: L.Map | null;
+  map: any;
 }
 
 export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
@@ -91,31 +89,6 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     });
   };
 
-  const exportImage = async () => {
-    if (!map) {
-      toast({
-        title: "خطأ",
-        description: "الخريطة غير جاهزة",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // استخدام leaflet-image أو طريقة بديلة
-      // للتبسيط، سنستخدم domtoimage (يمكن إضافته لاحقاً)
-      toast({
-        title: "قريباً",
-        description: "ميزة تصدير الصورة قيد التطوير",
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "فشل تصدير الصورة",
-        variant: "destructive",
-      });
-    }
-  };
 
   const exportHTML = () => {
     // إنشاء ملف HTML مستقل
@@ -190,55 +163,45 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   };
 
   return (
-    <Card className="p-4">
-      <h3 className="text-lg font-semibold mb-4">تصدير البيانات</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={exportGeoJSON}
-          disabled={markers.length === 0}
-        >
-          <FileJson className="w-4 h-4" />
-          GeoJSON
-        </Button>
+    <div className="grid grid-cols-1 gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportGeoJSON}
+        disabled={markers.length === 0}
+      >
+        <FileJson className="w-4 h-4" />
+        GeoJSON
+      </Button>
 
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={exportCSV}
-          disabled={markers.length === 0}
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          CSV
-        </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportCSV}
+        disabled={markers.length === 0}
+      >
+        <FileSpreadsheet className="w-4 h-4" />
+        CSV
+      </Button>
 
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={exportImage}
-          disabled={!map}
-        >
-          <ImageIcon className="w-4 h-4" />
-          صورة PNG
-        </Button>
-
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={exportHTML}
-          disabled={markers.length === 0}
-        >
-          <FileCode className="w-4 h-4" />
-          HTML
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportHTML}
+        disabled={markers.length === 0}
+      >
+        <FileCode className="w-4 h-4" />
+        HTML
+      </Button>
       
       {markers.length === 0 && (
-        <p className="text-sm text-muted-foreground mt-3 text-center">
+        <p className="text-xs text-muted-foreground mt-2 text-center">
           أضف نقاطاً للتصدير
         </p>
       )}
-    </Card>
+    </div>
   );
 };

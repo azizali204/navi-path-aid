@@ -51,19 +51,21 @@ export const AddMarkerDialog = ({
   });
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    } else {
-      setFormData({
-        name_ar: '',
-        type: 'ship',
-        subtype: '',
-        description_ar: '',
-        icon: 'ship',
-        lat: 21.5433,
-        lng: 39.1520,
-        severity: 'low'
-      });
+    if (open) {
+      if (initialData) {
+        setFormData(initialData);
+      } else {
+        setFormData({
+          name_ar: '',
+          type: 'ship',
+          subtype: '',
+          description_ar: '',
+          icon: 'ship',
+          lat: 21.5433,
+          lng: 39.1520,
+          severity: 'low'
+        });
+      }
     }
   }, [initialData, open]);
 
