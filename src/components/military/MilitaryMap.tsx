@@ -140,22 +140,7 @@ export const MilitaryMap = () => {
 
       map.current.on('load', () => {
         setIsMapReady(true);
-        
-        // تحميل البيانات من GeoJSON
-        fetch('/data/markers.geojson')
-          .then(res => res.json())
-          .then(data => {
-            setAllMarkers(data.features);
-            renderMarkers(data.features, customMarkers);
-          })
-          .catch(err => {
-            console.error('خطأ في تحميل البيانات:', err);
-            toast({
-              title: "خطأ في تحميل البيانات",
-              description: "تعذر تحميل الرموز العسكرية",
-              variant: "destructive",
-            });
-          });
+        renderMarkers([], customMarkers);
       });
 
     } catch (error) {
@@ -189,62 +174,7 @@ export const MilitaryMap = () => {
     });
     markersRef.current = {};
 
-    // إنشاء علامات من GeoJSON
-    features.forEach((feature) => {
-      const { type, name_ar, description_ar, icon, severity } = feature.properties;
-      const [lng, lat] = feature.geometry.coordinates;
-
-      if (!activeCategories.has(type)) return;
-
-      if (!markersRef.current[type]) {
-        markersRef.current[type] = [];
-      }
-
-      const iconHtml = MilitarySymbolIcons[icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
-      const severityColor = severity === 'high' ? '#ef4444' : severity === 'medium' ? '#eab308' : '#22c55e';
-      
-      const el = document.createElement('div');
-      el.className = 'marker-container';
-      el.innerHTML = `
-        <div style="
-          width: 40px;
-          height: 40px;
-          border: 3px solid ${severityColor};
-          border-radius: 50%;
-          background: #1a1a1a;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        ">
-          ${iconHtml}
-        </div>
-      `;
-
-      const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([lng, lat])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div dir="rtl" style="text-align: right; min-width: 200px;">
-                <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${name_ar}</h3>
-                <p style="font-size: 14px; color: #666; margin-bottom: 4px;"><strong>النوع:</strong> ${type}</p>
-                <p style="font-size: 14px; margin-bottom: 12px;">${description_ar}</p>
-                <button 
-                  onclick="console.log('إضافة إلى المسار:', '${name_ar}')"
-                  style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
-                >
-                  إضافة إلى المسار
-                </button>
-              </div>
-            `)
-        )
-        .addTo(map.current!);
-
-      markersRef.current[type].push(marker);
-    });
-
-    // إضافة النقاط المخصصة
+    // إضافة النقاط المخصصة فقط
     custom.forEach((markerData) => {
       const type = markerData.type;
 
@@ -344,19 +274,17 @@ export const MilitaryMap = () => {
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     if (!term.trim()) {
-      renderMarkers(allMarkers, customMarkers);
+      renderMarkers([], customMarkers);
       return;
     }
 
-    const filtered = allMarkers.filter(marker => 
-      marker.properties.name_ar.includes(term) ||
-      marker.properties.description_ar.includes(term)
+    const filtered = customMarkers.filter(marker => 
+      marker.name_ar.includes(term) ||
+      marker.description_ar.includes(term)
     );
-    renderMarkers(filtered, customMarkers);
-
+    
     if (filtered.length > 0 && map.current) {
-      const [lng, lat] = filtered[0].geometry.coordinates;
-      map.current.flyTo({ center: [lng, lat], zoom: 13, duration: 2000 });
+      map.current.flyTo({ center: [filtered[0].lng, filtered[0].lat], zoom: 13, duration: 2000 });
     }
   };
 
