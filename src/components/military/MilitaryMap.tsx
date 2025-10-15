@@ -5,8 +5,12 @@ import { MilitarySymbolIcons } from "./MilitarySymbolIcons";
 import { MapControls } from "./MapControls";
 import { MapLegend } from "./MapLegend";
 import { SearchPanel } from "./SearchPanel";
+import { AddMarkerDialog } from "./AddMarkerDialog";
+import { MarkersTable } from "./MarkersTable";
+import { ExportPanel } from "./ExportPanel";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Save, Plus, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // DEMO: قم بوضع رمز Mapbox الخاص بك هنا
@@ -22,11 +26,24 @@ interface MarkerFeature {
     subtype: string;
     description_ar: string;
     icon: string;
+    severity?: 'low' | 'medium' | 'high';
   };
   geometry: {
     type: string;
     coordinates: [number, number];
   };
+}
+
+interface MarkerData {
+  id: number;
+  name_ar: string;
+  type: string;
+  subtype: string;
+  description_ar: string;
+  icon: string;
+  lat: number;
+  lng: number;
+  severity?: 'low' | 'medium' | 'high';
 }
 
 export const MilitaryMap = () => {
@@ -41,7 +58,32 @@ export const MilitaryMap = () => {
   ]));
   const [searchTerm, setSearchTerm] = useState("");
   const [allMarkers, setAllMarkers] = useState<MarkerFeature[]>([]);
+  const [customMarkers, setCustomMarkers] = useState<MarkerData[]>([]);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingMarker, setEditingMarker] = useState<MarkerData | null>(null);
+  const [pickingCoordinates, setPickingCoordinates] = useState(false);
+  const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
   const { toast } = useToast();
+
+  // تحميل النقاط المخصصة من LocalStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('navmap_points_v1');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setCustomMarkers(parsed);
+      } catch (error) {
+        console.error('خطأ في تحميل النقاط المحفوظة:', error);
+      }
+    }
+  }, []);
+
+  // حفظ النقاط المخصصة في LocalStorage
+  useEffect(() => {
+    if (customMarkers.length > 0) {
+      localStorage.setItem('navmap_points_v1', JSON.stringify(customMarkers));
+    }
+  }, [customMarkers]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -88,12 +130,23 @@ export const MilitaryMap = () => {
       }
     });
 
+    // النقر على الخريطة لالتقاط الإحداثيات
+    map.current.on('click', (e: L.LeafletMouseEvent) => {
+      if (pickingCoordinates) {
+        setTempCoordinates([e.latlng.lat, e.latlng.lng]);
+        toast({
+          title: "تم التقاط الإحداثيات",
+          description: `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`,
+        });
+      }
+    });
+
     // تحميل البيانات من GeoJSON
     fetch('/data/markers.geojson')
       .then(res => res.json())
       .then(data => {
         setAllMarkers(data.features);
-        renderMarkers(data.features);
+        renderMarkers(data.features, customMarkers);
       })
       .catch(err => {
         console.error('خطأ في تحميل البيانات:', err);
@@ -110,7 +163,14 @@ export const MilitaryMap = () => {
     };
   }, []);
 
-  const renderMarkers = (features: MarkerFeature[]) => {
+  // تحديث العرض عند تغيير النقاط المخصصة
+  useEffect(() => {
+    if (map.current && allMarkers.length > 0) {
+      renderMarkers(allMarkers, customMarkers);
+    }
+  }, [customMarkers, activeCategories]);
+
+  const renderMarkers = (features: MarkerFeature[], custom: MarkerData[] = []) => {
     if (!map.current) return;
 
     // مسح الطبقات القديمة
@@ -119,9 +179,9 @@ export const MilitaryMap = () => {
     });
     markersLayer.current = {};
 
-    // إنشاء طبقة لكل نوع
+    // إنشاء طبقة لكل نوع - من GeoJSON
     features.forEach((feature) => {
-      const { type, name_ar, description_ar, icon } = feature.properties;
+      const { type, name_ar, description_ar, icon, severity } = feature.properties;
       const [lng, lat] = feature.geometry.coordinates;
 
       if (!markersLayer.current[type]) {
@@ -132,11 +192,13 @@ export const MilitaryMap = () => {
       }
 
       const iconHtml = MilitarySymbolIcons[icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons['default'];
+      const severityColor = severity === 'high' ? 'border-red-500' : severity === 'medium' ? 'border-yellow-500' : 'border-green-500';
+      
       const divIcon = L.divIcon({
-        html: iconHtml,
+        html: `<div class="${severityColor} border-2 rounded-full p-1 bg-background">${iconHtml}</div>`,
         className: 'military-marker',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
       });
 
       const marker = L.marker([lat, lng], { icon: divIcon });
@@ -156,6 +218,46 @@ export const MilitaryMap = () => {
       `);
 
       marker.addTo(markersLayer.current[type]);
+    });
+
+    // إضافة النقاط المخصصة
+    custom.forEach((marker) => {
+      const type = marker.type;
+
+      if (!markersLayer.current[type]) {
+        markersLayer.current[type] = L.layerGroup();
+        if (activeCategories.has(type)) {
+          markersLayer.current[type].addTo(map.current!);
+        }
+      }
+
+      const iconHtml = MilitarySymbolIcons[marker.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons['default'];
+      const severityColor = marker.severity === 'high' ? 'border-red-500' : marker.severity === 'medium' ? 'border-yellow-500' : 'border-green-500';
+      
+      const divIcon = L.divIcon({
+        html: `<div class="${severityColor} border-2 rounded-full p-1 bg-background"><div class="bg-primary/20 rounded-full p-1">${iconHtml}</div></div>`,
+        className: 'military-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+
+      const leafletMarker = L.marker([marker.lat, marker.lng], { icon: divIcon });
+      
+      leafletMarker.bindPopup(`
+        <div dir="rtl" class="text-right p-2">
+          <h3 class="font-bold text-lg mb-2">${marker.name_ar} <span class="text-xs text-primary">(مخصص)</span></h3>
+          <p class="text-sm text-gray-600 mb-1"><strong>النوع:</strong> ${marker.type}</p>
+          <p class="text-sm mb-3">${marker.description_ar}</p>
+          <button 
+            onclick="console.log('إضافة إلى المسار:', '${marker.name_ar}')"
+            class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+          >
+            إضافة إلى المسار
+          </button>
+        </div>
+      `);
+
+      leafletMarker.addTo(markersLayer.current[type]);
     });
   };
 
@@ -210,6 +312,65 @@ export const MilitaryMap = () => {
     }
   };
 
+  const handleAddMarker = () => {
+    setEditingMarker(null);
+    setShowAddDialog(true);
+  };
+
+  const handleSaveMarker = (markerData: Omit<MarkerData, 'id'>) => {
+    if (editingMarker) {
+      // تحديث
+      setCustomMarkers(prev => 
+        prev.map(m => m.id === editingMarker.id ? { ...markerData, id: editingMarker.id } : m)
+      );
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث النقطة بنجاح",
+      });
+    } else {
+      // إضافة جديد
+      const newMarker: MarkerData = {
+        ...markerData,
+        id: Date.now(),
+        lat: tempCoordinates?.[0] || markerData.lat,
+        lng: tempCoordinates?.[1] || markerData.lng,
+      };
+      setCustomMarkers(prev => [...prev, newMarker]);
+      toast({
+        title: "تمت الإضافة",
+        description: "تمت إضافة النقطة بنجاح",
+      });
+    }
+    setPickingCoordinates(false);
+    setTempCoordinates(null);
+  };
+
+  const handleEditMarker = (marker: MarkerData) => {
+    setEditingMarker(marker);
+    setShowAddDialog(true);
+  };
+
+  const handleDeleteMarker = (id: number) => {
+    setCustomMarkers(prev => prev.filter(m => m.id !== id));
+    toast({
+      title: "تم الحذف",
+      description: "تم حذف النقطة بنجاح",
+    });
+  };
+
+  const handleFocusMarker = (lat: number, lng: number) => {
+    if (map.current) {
+      map.current.setView([lat, lng], 15, { animate: true });
+    }
+  };
+
+  const handlePickCoordinates = () => {
+    setPickingCoordinates(!pickingCoordinates);
+    if (pickingCoordinates) {
+      setTempCoordinates(null);
+    }
+  };
+
   return (
     <div className="relative h-screen w-full" dir="rtl">
       <div ref={mapContainer} className="absolute inset-0" />
@@ -226,9 +387,41 @@ export const MilitaryMap = () => {
       {/* المفتاح */}
       <MapLegend />
 
-      {/* زر حفظ العرض */}
-      <div className="absolute top-4 left-4 z-[1000]">
-        <Button onClick={saveView} className="gap-2">
+      {/* أزرار التحكم العلوية */}
+      <div className="absolute top-4 left-4 z-[1000] flex gap-2">
+        <Button onClick={handleAddMarker} className="gap-2">
+          <Plus className="w-4 h-4" />
+          إضافة نقطة
+        </Button>
+        
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Database className="w-4 h-4" />
+              إدارة النقاط ({customMarkers.length})
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-full sm:max-w-4xl overflow-y-auto" dir="rtl">
+            <SheetHeader>
+              <SheetTitle>إدارة النقاط المخصصة</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-6">
+              <MarkersTable
+                markers={customMarkers}
+                onEdit={handleEditMarker}
+                onDelete={handleDeleteMarker}
+                onFocus={handleFocusMarker}
+              />
+              
+              <ExportPanel
+                markers={customMarkers}
+                map={map.current}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Button onClick={saveView} variant="outline" className="gap-2">
           <Save className="w-4 h-4" />
           حفظ العرض
         </Button>
@@ -240,6 +433,21 @@ export const MilitaryMap = () => {
           Lat: {coordinates.lat.toFixed(4)}° | Lng: {coordinates.lng.toFixed(4)}°
         </div>
       </div>
+
+      {/* مودال إضافة/تعديل نقطة */}
+      <AddMarkerDialog
+        open={showAddDialog}
+        onClose={() => {
+          setShowAddDialog(false);
+          setEditingMarker(null);
+          setPickingCoordinates(false);
+          setTempCoordinates(null);
+        }}
+        onSave={handleSaveMarker}
+        initialData={editingMarker}
+        pickingCoordinates={pickingCoordinates}
+        onPickCoordinates={handlePickCoordinates}
+      />
 
       <style>{`
         .military-marker {
@@ -253,6 +461,11 @@ export const MilitaryMap = () => {
         .leaflet-popup-tip {
           background: rgba(255, 255, 255, 0.95);
         }
+        ${pickingCoordinates ? `
+        .leaflet-container {
+          cursor: crosshair !important;
+        }
+        ` : ''}
       `}</style>
     </div>
   );
