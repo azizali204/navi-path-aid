@@ -1,0 +1,230 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "name_ar": "سفينة دورية الصقر",
+        "type": "ship",
+        "subtype": "patrol",
+        "description_ar": "سفينة دورية خفيفة للمراقبة الساحلية",
+        "icon": "ship-patrol"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1520, 21.5433]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "name_ar": "فرقاطة النصر",
+        "type": "ship",
+        "subtype": "frigate",
+        "description_ar": "فرقاطة حربية للعمليات البحرية الرئيسية",
+        "icon": "ship-frigate"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1820, 21.5633]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "name_ar": "سفينة شحن تجارية",
+        "type": "ship",
+        "subtype": "merchant",
+        "description_ar": "سفينة شحن تجارية متوسطة الحجم",
+        "icon": "ship-merchant"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1320, 21.5233]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 4,
+        "name_ar": "غواصة الخليج",
+        "type": "submarine",
+        "subtype": "attack",
+        "description_ar": "غواصة هجومية للعمليات الخاصة",
+        "icon": "submarine"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1120, 21.5833]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 5,
+        "name_ar": "قاعدة الملك فهد البحرية",
+        "type": "naval_base",
+        "subtype": "main",
+        "description_ar": "القاعدة البحرية الرئيسية مع مرافق كاملة",
+        "icon": "naval-base"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1720, 21.5933]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 6,
+        "name_ar": "ميناء جدة الإسلامي",
+        "type": "port",
+        "subtype": "commercial",
+        "description_ar": "ميناء تجاري رئيسي على البحر الأحمر",
+        "icon": "port"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1420, 21.4733]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 7,
+        "name_ar": "خط الدفاع الساحلي A",
+        "type": "defensive_line",
+        "subtype": "coastal",
+        "description_ar": "خط دفاعي ساحلي محصن",
+        "icon": "trench"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1220, 21.6133]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 8,
+        "name_ar": "برج المراقبة الشمالي",
+        "type": "watchtower",
+        "subtype": "radar",
+        "description_ar": "برج مراقبة مزود برادار متقدم",
+        "icon": "watchtower"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1920, 21.6233]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 9,
+        "name_ar": "عوامة ملاحية رقم 12",
+        "type": "navigation_buoy",
+        "subtype": "marker",
+        "description_ar": "عوامة دليل لتحديد المسار الآمن",
+        "icon": "buoy"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1020, 21.5533]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 10,
+        "name_ar": "منطقة تدريبات محظورة",
+        "type": "restricted_zone",
+        "subtype": "training",
+        "description_ar": "منطقة عسكرية محظورة - تدريبات نارية",
+        "icon": "restricted"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.0820, 21.5933]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 11,
+        "name_ar": "مرسى الطوارئ الجنوبي",
+        "type": "anchor_point",
+        "subtype": "emergency",
+        "description_ar": "نقطة رسو للحالات الطارئة",
+        "icon": "anchor"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1620, 21.4533]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 12,
+        "name_ar": "مهبط هليكوبتر القاعدة",
+        "type": "helipad",
+        "subtype": "military",
+        "description_ar": "مهبط طائرات هليكوبتر للعمليات العسكرية",
+        "icon": "helipad"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1750, 21.5980]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 13,
+        "name_ar": "حقل ألغام بحري",
+        "type": "minefield",
+        "subtype": "defensive",
+        "description_ar": "منطقة ألغام بحرية دفاعية - خطر شديد",
+        "icon": "minefield"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.0620, 21.6333]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 14,
+        "name_ar": "ثكنة القوات الخاصة",
+        "type": "barracks",
+        "subtype": "special_forces",
+        "description_ar": "ثكنة القوات الخاصة البحرية",
+        "icon": "barracks"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1820, 21.6033]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 15,
+        "name_ar": "عوامة إنذار مبكر",
+        "type": "navigation_buoy",
+        "subtype": "warning",
+        "description_ar": "عوامة إنذار للمياه الضحلة",
+        "icon": "buoy"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.1120, 21.4833]
+      }
+    }
+  ]
+}
