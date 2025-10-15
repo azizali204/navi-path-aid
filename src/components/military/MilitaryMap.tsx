@@ -61,6 +61,7 @@ export const MilitaryMap = () => {
   const [pickingCoordinates, setPickingCoordinates] = useState(false);
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
   const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/dark-v11');
+  const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
   const { toast } = useToast();
 
   // تحميل النقاط المخصصة من LocalStorage
@@ -446,54 +447,89 @@ export const MilitaryMap = () => {
         <div ref={mapContainer} className="absolute inset-0" />
 
         {/* عنصر تحكم نوع الخريطة */}
-        <div className="absolute top-4 left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg">
-          <div className="p-2 space-y-1">
-            <button
-              onClick={() => changeMapStyle('mapbox://styles/mapbox/satellite-v9')}
-              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
-                mapStyle === 'mapbox://styles/mapbox/satellite-v9' ? 'bg-accent' : ''
-              }`}
-              title="أقمار صناعية"
+        <div className="absolute top-4 left-4 z-[10]">
+          <button
+            onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
+            className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            title="تغيير نوع الخريطة"
+          >
+            🗺️ نوع الخريطة
+            <svg
+              className={`w-4 h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              🛰️ أقمار صناعية
-            </button>
-            <button
-              onClick={() => changeMapStyle('mapbox://styles/mapbox/satellite-streets-v12')}
-              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
-                mapStyle === 'mapbox://styles/mapbox/satellite-streets-v12' ? 'bg-accent' : ''
-              }`}
-              title="أقمار صناعية + شوارع"
-            >
-              🗺️ مختلط
-            </button>
-            <button
-              onClick={() => changeMapStyle('mapbox://styles/mapbox/streets-v12')}
-              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
-                mapStyle === 'mapbox://styles/mapbox/streets-v12' ? 'bg-accent' : ''
-              }`}
-              title="شوارع"
-            >
-              📍 شوارع
-            </button>
-            <button
-              onClick={() => changeMapStyle('mapbox://styles/mapbox/dark-v11')}
-              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
-                mapStyle === 'mapbox://styles/mapbox/dark-v11' ? 'bg-accent' : ''
-              }`}
-              title="داكن"
-            >
-              🌙 داكن
-            </button>
-            <button
-              onClick={() => changeMapStyle('mapbox://styles/mapbox/light-v11')}
-              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
-                mapStyle === 'mapbox://styles/mapbox/light-v11' ? 'bg-accent' : ''
-              }`}
-              title="فاتح"
-            >
-              ☀️ فاتح
-            </button>
-          </div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {mapStyleMenuOpen && (
+            <div className="mt-2 bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in">
+              <div className="p-2 space-y-1">
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/satellite-v9');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/satellite-v9' ? 'bg-accent' : ''
+                  }`}
+                  title="أقمار صناعية"
+                >
+                  🛰️ أقمار صناعية
+                </button>
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/satellite-streets-v12');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/satellite-streets-v12' ? 'bg-accent' : ''
+                  }`}
+                  title="أقمار صناعية + شوارع"
+                >
+                  🗺️ مختلط
+                </button>
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/streets-v12');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/streets-v12' ? 'bg-accent' : ''
+                  }`}
+                  title="شوارع"
+                >
+                  📍 شوارع
+                </button>
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/dark-v11');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/dark-v11' ? 'bg-accent' : ''
+                  }`}
+                  title="داكن"
+                >
+                  🌙 داكن
+                </button>
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/light-v11');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/light-v11' ? 'bg-accent' : ''
+                  }`}
+                  title="فاتح"
+                >
+                  ☀️ فاتح
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* شريط الإحداثيات */}
