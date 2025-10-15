@@ -276,27 +276,55 @@ export const MilitaryMap = () => {
         </div>
       `;
 
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setHTML(`
+          <div dir="rtl" style="text-align: right; min-width: 200px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+              ${markerData.name_ar} 
+              <span style="font-size: 12px; color: #3b82f6;">(مخصص)</span>
+            </h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 4px;"><strong>النوع:</strong> ${markerData.type}</p>
+            <p style="font-size: 14px; margin-bottom: 12px;">${markerData.description_ar}</p>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button 
+                class="edit-marker-btn-${markerData.id}"
+                style="flex: 1; background: #3b82f6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
+              >
+                تعديل
+              </button>
+              <button 
+                class="delete-marker-btn-${markerData.id}"
+                style="flex: 1; background: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
+              >
+                حذف
+              </button>
+            </div>
+          </div>
+        `);
+
+      // إضافة event listeners بعد فتح الـ popup
+      popup.on('open', () => {
+        const editBtn = document.querySelector(`.edit-marker-btn-${markerData.id}`);
+        const deleteBtn = document.querySelector(`.delete-marker-btn-${markerData.id}`);
+        
+        if (editBtn) {
+          editBtn.addEventListener('click', () => {
+            handleEditMarker(markerData);
+            popup.remove();
+          });
+        }
+        
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', () => {
+            handleDeleteMarker(markerData.id);
+            popup.remove();
+          });
+        }
+      });
+
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([markerData.lng, markerData.lat])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div dir="rtl" style="text-align: right; min-width: 200px;">
-                <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
-                  ${markerData.name_ar} 
-                  <span style="font-size: 12px; color: #3b82f6;">(مخصص)</span>
-                </h3>
-                <p style="font-size: 14px; color: #666; margin-bottom: 4px;"><strong>النوع:</strong> ${markerData.type}</p>
-                <p style="font-size: 14px; margin-bottom: 12px;">${markerData.description_ar}</p>
-                <button 
-                  onclick="console.log('إضافة إلى المسار:', '${markerData.name_ar}')"
-                  style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
-                >
-                  إضافة إلى المسار
-                </button>
-              </div>
-            `)
-        )
+        .setPopup(popup)
         .addTo(map.current!);
 
       markersRef.current[type].push(marker);
