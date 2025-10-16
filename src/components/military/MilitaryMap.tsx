@@ -140,6 +140,83 @@ export const MilitaryMap = () => {
         }
       });
 
+      // قائمة السياق عند النقر بزر الماوس الأيمن
+      map.current.on('contextmenu', (e) => {
+        e.preventDefault();
+        const contextMenu = document.createElement('div');
+        contextMenu.className = 'context-menu';
+        contextMenu.style.cssText = `
+          position: fixed;
+          left: ${e.originalEvent.clientX}px;
+          top: ${e.originalEvent.clientY}px;
+          background: white;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          padding: 8px 0;
+          z-index: 10000;
+          min-width: 180px;
+        `;
+        
+        const menuItems = [
+          {
+            label: '➕ إضافة نقطة هنا',
+            action: () => {
+              setTempCoordinates([e.lngLat.lat, e.lngLat.lng]);
+              setShowAddDialog(true);
+            }
+          },
+          {
+            label: '📍 الإحداثيات',
+            action: () => {
+              navigator.clipboard.writeText(`${e.lngLat.lat.toFixed(6)}, ${e.lngLat.lng.toFixed(6)}`);
+              toast({
+                title: "تم النسخ",
+                description: `Lat: ${e.lngLat.lat.toFixed(6)}, Lng: ${e.lngLat.lng.toFixed(6)}`,
+              });
+            }
+          },
+          {
+            label: '🧭 التوجه إلى هنا',
+            action: () => {
+              map.current?.flyTo({ center: [e.lngLat.lng, e.lngLat.lat], zoom: 15, duration: 2000 });
+            }
+          }
+        ];
+
+        menuItems.forEach(item => {
+          const menuItem = document.createElement('div');
+          menuItem.textContent = item.label;
+          menuItem.style.cssText = `
+            padding: 8px 16px;
+            cursor: pointer;
+            text-align: right;
+            font-size: 14px;
+          `;
+          menuItem.onmouseover = () => {
+            menuItem.style.background = '#f0f0f0';
+          };
+          menuItem.onmouseout = () => {
+            menuItem.style.background = 'transparent';
+          };
+          menuItem.onclick = () => {
+            item.action();
+            document.body.removeChild(contextMenu);
+          };
+          contextMenu.appendChild(menuItem);
+        });
+
+        const closeMenu = () => {
+          if (document.body.contains(contextMenu)) {
+            document.body.removeChild(contextMenu);
+          }
+          document.removeEventListener('click', closeMenu);
+        };
+
+        document.body.appendChild(contextMenu);
+        setTimeout(() => document.addEventListener('click', closeMenu), 0);
+      });
+
       map.current.on('load', () => {
         setIsMapReady(true);
         renderMarkers([], customMarkers);
@@ -162,7 +239,7 @@ export const MilitaryMap = () => {
 
   // تحديث العرض عند تغيير النقاط المخصصة
   useEffect(() => {
-    if (map.current && isMapReady && allMarkers.length > 0) {
+    if (map.current && isMapReady) {
       renderMarkers(allMarkers, customMarkers);
     }
   }, [customMarkers, activeCategories, isMapReady]);
