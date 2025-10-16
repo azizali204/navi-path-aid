@@ -9,7 +9,7 @@ const Index = () => {
     return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
   }
 
-  return <MilitaryMap />;
+  return <MilitaryMap onLogout={() => setIsAuthenticated(false)} />;
 };
 
 export default Index;

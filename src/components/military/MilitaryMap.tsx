@@ -41,7 +41,11 @@ interface MarkerData {
   severity?: 'low' | 'medium' | 'high';
 }
 
-export const MilitaryMap = () => {
+interface MilitaryMapProps {
+  onLogout?: () => void;
+}
+
+export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker[] }>({});
@@ -180,6 +184,12 @@ export const MilitaryMap = () => {
             label: '🧭 التوجه إلى هنا',
             action: () => {
               map.current?.flyTo({ center: [e.lngLat.lng, e.lngLat.lat], zoom: 15, duration: 2000 });
+            }
+          },
+          {
+            label: '🚪 تسجيل الخروج',
+            action: () => {
+              onLogout?.();
             }
           }
         ];
@@ -523,27 +533,36 @@ export const MilitaryMap = () => {
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
 
-        {/* عنصر تحكم نوع الخريطة */}
-        <div className="absolute top-4 left-4 z-[10]">
-          <button
-            onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
-            className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
-            title="تغيير نوع الخريطة"
+      {/* عنصر تحكم نوع الخريطة */}
+      <div className="absolute top-4 left-4 z-[10] flex gap-2">
+        <button
+          onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
+          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+          title="تغيير نوع الخريطة"
+        >
+          🗺️ نوع الخريطة
+          <svg
+            className={`w-4 h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            🗺️ نوع الخريطة
-            <svg
-              className={`w-4 h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {mapStyleMenuOpen && (
-            <div className="mt-2 bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in">
-              <div className="p-2 space-y-1">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        <button
+          onClick={onLogout}
+          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-2"
+          title="تسجيل الخروج"
+        >
+          🚪 خروج
+        </button>
+      </div>
+      
+      {mapStyleMenuOpen && (
+        <div className="absolute top-[52px] left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in">
+          <div className="p-2 space-y-1">
                 <button
                   onClick={() => {
                     changeMapStyle('mapbox://styles/mapbox/satellite-v9');
@@ -604,12 +623,11 @@ export const MilitaryMap = () => {
                 >
                   ☀️ فاتح
                 </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
+      )}
 
-        {/* شريط الإحداثيات */}
+      {/* شريط الإحداثيات */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[10] bg-card/95 backdrop-blur px-4 py-2 rounded-lg border border-border shadow-lg">
           <div className="text-sm font-mono text-foreground" dir="ltr">
             Lat: {coordinates.lat.toFixed(4)}° | Lng: {coordinates.lng.toFixed(4)}°
