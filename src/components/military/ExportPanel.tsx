@@ -510,82 +510,113 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     }
 
     try {
-      // انتظر استقرار الخريطة
-      await new Promise<void>((resolve) => {
-        if (map.loaded()) resolve();
-        else map.once('idle', () => resolve());
+      toast({
+        title: "جاري التصدير...",
+        description: "يتم التقاط صورة الخريطة مع الأيقونات",
       });
 
+      // انتظر استقرار الخريطة
+      await new Promise<void>((resolve) => {
+        if (map.loaded() && !map.isMoving()) {
+          resolve();
+        } else {
+          map.once('idle', () => resolve());
+        }
+      });
+
+      // الحصول على canvas الخريطة الأساسية
       const baseCanvas: HTMLCanvasElement = map.getCanvas();
       const container: HTMLDivElement = map.getContainer();
+      
+      // إنشاء canvas جديد بنفس الحجم
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = baseCanvas.width;
+      outputCanvas.height = baseCanvas.height;
+      const ctx = outputCanvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('فشل في إنشاء السياق');
+      }
+
+      // 1. رسم الخريطة الأساسية أولاً
+      ctx.drawImage(baseCanvas, 0, 0);
+
+      // حساب النسبة بين CSS pixels و canvas pixels
       const cssWidth = container.clientWidth || baseCanvas.width;
       const ratio = baseCanvas.width / cssWidth;
 
-      // Canvas الناتج بنفس دقة خريطة Mapbox (مع devicePixelRatio)
-      const out = document.createElement('canvas');
-      out.width = baseCanvas.width;
-      out.height = baseCanvas.height;
-      const ctx = out.getContext('2d');
-      if (!ctx) throw new Error('No 2D context');
-
-      // رسم الخريطة الأساسية
-      ctx.drawImage(baseCanvas, 0, 0);
-
-      // تحميل أيقونات العلامات أولاً لسرعة الرسم
-      const markerImages: Record<number, HTMLImageElement> = {};
-      for (const m of markers) {
-        try {
-          markerImages[m.id] = await getIconForMarker(m);
-        } catch {}
-      }
-
-      // رسم العلامات فوق الخريطة
-      const iconSizeCss = 32; // بكسلات CSS
+      // 2. تحميل ورسم الأيقونات فوق الخريطة
+      const iconSizeCss = 32; // حجم الأيقونة بالبكسل
       const iconSize = iconSizeCss * ratio;
       const ringRadius = 20 * ratio;
       const ringFillRadius = 18 * ratio;
-      const cssHeight = container.clientHeight || baseCanvas.height / ratio;
 
-      for (const m of markers) {
-        const p = map.project({ lng: m.lng, lat: m.lat });
-        const x = p.x * ratio;
-        const y = p.y * ratio;
-        if (x < -50 || y < -50 || x > out.width + 50 || y > out.height + 50) continue;
+      for (const marker of markers) {
+        try {
+          // حساب موقع الأيقونة على الخريطة
+          const point = map.project({ lng: marker.lng, lat: marker.lat });
+          const x = point.x * ratio;
+          const y = point.y * ratio;
 
-        // خلفية خفيفة
-        ctx.beginPath();
-        ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
-        ctx.fill();
+          // تخطي الأيقونات خارج حدود الخريطة
+          if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
+            continue;
+          }
 
-        // إطار حسب مستوى الأهمية
-        ctx.beginPath();
-        ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-        ctx.lineWidth = 3 * ratio;
-        ctx.strokeStyle = getSeverityColor(m.severity);
-        ctx.stroke();
+          // رسم خلفية دائرية خفيفة
+          ctx.beginPath();
+          ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+          ctx.fill();
 
-        // أيقونة
-        const img = markerImages[m.id];
-        if (img) {
-          ctx.drawImage(img, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
+          // رسم إطار دائري حسب مستوى الأهمية
+          ctx.beginPath();
+          ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+          ctx.lineWidth = 3 * ratio;
+          ctx.strokeStyle = getSeverityColor(marker.severity);
+          ctx.shadowBlur = 10 * ratio;
+          ctx.shadowColor = getSeverityColor(marker.severity);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // رسم الأيقونة
+          const iconImage = await getIconForMarker(marker);
+          ctx.drawImage(
+            iconImage,
+            x - iconSize / 2,
+            y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+        } catch (error) {
+          console.error('خطأ في رسم الأيقونة:', marker.id, error);
         }
       }
 
-      out.toBlob((blob) => {
-        if (!blob) return;
+      // 3. تصدير الصورة النهائية
+      outputCanvas.toBlob((blob) => {
+        if (!blob) {
+          toast({
+            title: "خطأ",
+            description: "فشل في إنشاء الصورة",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `naval-map-with-icons-${Date.now()}.png`;
+        a.download = `naval-map-complete-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
 
         toast({
           title: "تم التصدير ✓",
-          description: "تم حفظ صورة الخريطة مع الأيقونات",
+          description: `تم حفظ صورة الخريطة مع ${markers.length} أيقونة`,
         });
-      });
+      }, 'image/png', 1.0);
+
     } catch (error) {
       console.error('خطأ في التصدير:', error);
       toast({
