@@ -164,10 +164,11 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           position: fixed;
           left: ${e.originalEvent.clientX}px;
           top: ${e.originalEvent.clientY}px;
-          background: white;
-          border: 1px solid #ccc;
+          background: rgba(15, 23, 42, 0.95);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
           padding: 8px 0;
           z-index: 10000;
           min-width: 180px;
@@ -213,12 +214,16 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
             cursor: pointer;
             text-align: right;
             font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            transition: all 0.2s;
           `;
           menuItem.onmouseover = () => {
-            menuItem.style.background = '#f0f0f0';
+            menuItem.style.background = 'rgba(59, 130, 246, 0.2)';
+            menuItem.style.color = 'rgba(255, 255, 255, 1)';
           };
           menuItem.onmouseout = () => {
             menuItem.style.background = 'transparent';
+            menuItem.style.color = 'rgba(255, 255, 255, 0.9)';
           };
           menuItem.onclick = () => {
             item.action();
