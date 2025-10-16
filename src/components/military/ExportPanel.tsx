@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes, Camera, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
 
 interface MarkerData {
   id: number;
@@ -24,6 +25,52 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const iconCache = useRef<Record<string, HTMLImageElement>>({});
+  const customIconCache = useRef<Record<string, HTMLImageElement>>({});
+
+  const getSeverityColor = (sev?: string) => {
+    switch (sev) {
+      case 'high':
+        return '#ef4444';
+      case 'medium':
+        return '#f59e0b';
+      default:
+        return '#10b981';
+    }
+  };
+
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+  const getIconForMarker = async (m: MarkerData): Promise<HTMLImageElement> => {
+    // أيقونة مخصصة محفوظة في localStorage
+    if (m.icon && m.icon.startsWith('custom_')) {
+      if (customIconCache.current[m.icon]) return customIconCache.current[m.icon];
+      try {
+        const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
+        const found = customIcons.find((ci: any) => ci.id === m.icon);
+        if (found?.dataUrl) {
+          const img = await loadImage(found.dataUrl);
+          customIconCache.current[m.icon] = img;
+          return img;
+        }
+      } catch {}
+    }
+
+    // أيقونات SVG المعرفة في النظام
+    const key = (m.icon as keyof typeof MilitarySymbolIcons) || 'default';
+    if (iconCache.current[key]) return iconCache.current[key];
+    const svg = (MilitarySymbolIcons as any)[key] || MilitarySymbolIcons.default;
+    const img = await loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+    iconCache.current[key] = img;
+    return img;
+  };
 
   const exportGeoJSON = () => {
     const geojson = {
@@ -463,26 +510,82 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     }
 
     try {
-      // التقاط الخريطة الأساسية
-      map.once('render', () => {
-        const canvas = map.getCanvas();
-        canvas.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `naval-map-${Date.now()}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
+      // انتظر استقرار الخريطة
+      await new Promise<void>((resolve) => {
+        if (map.loaded()) resolve();
+        else map.once('idle', () => resolve());
+      });
 
-          toast({
-            title: "تم التصدير ✓",
-            description: "تم حفظ صورة الخريطة. للحصول على الأيقونات، استخدم أداة لقطة الشاشة (Print Screen)",
-          });
+      const baseCanvas: HTMLCanvasElement = map.getCanvas();
+      const container: HTMLDivElement = map.getContainer();
+      const cssWidth = container.clientWidth || baseCanvas.width;
+      const ratio = baseCanvas.width / cssWidth;
+
+      // Canvas الناتج بنفس دقة خريطة Mapbox (مع devicePixelRatio)
+      const out = document.createElement('canvas');
+      out.width = baseCanvas.width;
+      out.height = baseCanvas.height;
+      const ctx = out.getContext('2d');
+      if (!ctx) throw new Error('No 2D context');
+
+      // رسم الخريطة الأساسية
+      ctx.drawImage(baseCanvas, 0, 0);
+
+      // تحميل أيقونات العلامات أولاً لسرعة الرسم
+      const markerImages: Record<number, HTMLImageElement> = {};
+      for (const m of markers) {
+        try {
+          markerImages[m.id] = await getIconForMarker(m);
+        } catch {}
+      }
+
+      // رسم العلامات فوق الخريطة
+      const iconSizeCss = 32; // بكسلات CSS
+      const iconSize = iconSizeCss * ratio;
+      const ringRadius = 20 * ratio;
+      const ringFillRadius = 18 * ratio;
+      const cssHeight = container.clientHeight || baseCanvas.height / ratio;
+
+      for (const m of markers) {
+        const p = map.project({ lng: m.lng, lat: m.lat });
+        const x = p.x * ratio;
+        const y = p.y * ratio;
+        if (x < -50 || y < -50 || x > out.width + 50 || y > out.height + 50) continue;
+
+        // خلفية خفيفة
+        ctx.beginPath();
+        ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+        ctx.fill();
+
+        // إطار حسب مستوى الأهمية
+        ctx.beginPath();
+        ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+        ctx.lineWidth = 3 * ratio;
+        ctx.strokeStyle = getSeverityColor(m.severity);
+        ctx.stroke();
+
+        // أيقونة
+        const img = markerImages[m.id];
+        if (img) {
+          ctx.drawImage(img, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
+        }
+      }
+
+      out.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `naval-map-with-icons-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "تم التصدير ✓",
+          description: "تم حفظ صورة الخريطة مع الأيقونات",
         });
       });
-      
-      map.triggerRepaint();
     } catch (error) {
       console.error('خطأ في التصدير:', error);
       toast({
