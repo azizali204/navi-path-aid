@@ -66,12 +66,31 @@ export const MarkersTable = ({ markers, onEdit, onDelete, onFocus }: MarkersTabl
           {markers.map((marker) => (
             <TableRow key={marker.id}>
               <TableCell>
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: MilitarySymbolIcons[marker.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default 
-                  }}
-                  className="w-6 h-6"
-                />
+                {marker.icon.startsWith('custom_') ? (
+                  (() => {
+                    const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
+                    const customIcon = customIcons.find((icon: any) => icon.id === marker.icon);
+                    return customIcon ? (
+                      <img 
+                        src={customIcon.dataUrl} 
+                        alt={customIcon.name}
+                        className="w-6 h-6 object-contain"
+                      />
+                    ) : (
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: MilitarySymbolIcons.default }}
+                        className="w-6 h-6"
+                      />
+                    );
+                  })()
+                ) : (
+                  <div 
+                    dangerouslySetInnerHTML={{ 
+                      __html: MilitarySymbolIcons[marker.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default 
+                    }}
+                    className="w-6 h-6"
+                  />
+                )}
               </TableCell>
               <TableCell className="font-medium">{marker.name_ar}</TableCell>
               <TableCell className="text-sm text-muted-foreground">

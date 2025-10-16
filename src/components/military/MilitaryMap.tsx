@@ -273,7 +273,20 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         markersRef.current[type] = [];
       }
 
-      const iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
+
+      // التحقق من الأيقونات المخصصة
+      let iconHtml: string;
+      if (markerData.icon.startsWith('custom_')) {
+        const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
+        const customIcon = customIcons.find((icon: any) => icon.id === markerData.icon);
+        if (customIcon) {
+          iconHtml = `<img src="${customIcon.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+        } else {
+          iconHtml = MilitarySymbolIcons.default;
+        }
+      } else {
+        iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
+      }
       const severityColor = markerData.severity === 'high' ? '#ef4444' : markerData.severity === 'medium' ? '#eab308' : '#22c55e';
       
       const el = document.createElement('div');
