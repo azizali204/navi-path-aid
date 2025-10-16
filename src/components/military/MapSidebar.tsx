@@ -105,7 +105,7 @@ export const MapSidebar = ({
   }
 
   return (
-    <div className="w-96 bg-card border-l border-border flex flex-col">
+    <div className="w-96 h-screen bg-card border-l border-border flex flex-col">
       {/* الهيدر */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
