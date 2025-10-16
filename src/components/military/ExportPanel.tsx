@@ -462,24 +462,30 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       return;
     }
 
-    const canvas = map.getCanvas();
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `naval-map-${Date.now()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+    // انتظار تحميل الخريطة بالكامل
+    map.once('idle', () => {
+      const canvas = map.getCanvas();
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `naval-map-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
 
-      toast({
-        title: "تم التصدير",
-        description: "تم حفظ صورة الخريطة",
+        toast({
+          title: "تم التصدير",
+          description: "تم حفظ صورة الخريطة",
+        });
       });
     });
+
+    // إعادة رسم الخريطة لضمان التحديث
+    map.triggerRepaint();
   };
 
-  const startRecording = async () => {
+  const startRecording = () => {
     if (!map) {
       toast({
         title: "خطأ",
@@ -491,10 +497,10 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
     try {
       const canvas = map.getCanvas();
-      const stream = canvas.captureStream(30); // 30 FPS
+      const stream = canvas.captureStream(25); // 25 FPS
       
       const recorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm',
+        mimeType: 'video/webm;codecs=vp9',
       });
 
       const chunks: Blob[] = [];
@@ -526,7 +532,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
       toast({
         title: "بدأ التسجيل",
-        description: "جاري تسجيل الخريطة...",
+        description: "جاري تسجيل الخريطة... (حرك الخريطة لتسجيل حركتها)",
       });
     } catch (error) {
       toast({
