@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, FileJson, FileSpreadsheet, FileCode } from "lucide-react";
+import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MarkerData {
@@ -246,6 +246,209 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     });
   };
 
+  const exportSVG = () => {
+    const width = 1920;
+    const height = 1080;
+    const padding = 100;
+
+    // حساب الحدود للنقاط
+    let minLat = Infinity, maxLat = -Infinity;
+    let minLng = Infinity, maxLng = -Infinity;
+
+    markers.forEach(m => {
+      minLat = Math.min(minLat, m.lat);
+      maxLat = Math.max(maxLat, m.lat);
+      minLng = Math.min(minLng, m.lng);
+      maxLng = Math.max(maxLng, m.lng);
+    });
+
+    // إضافة هامش
+    const latRange = maxLat - minLat || 1;
+    const lngRange = maxLng - minLng || 1;
+    minLat -= latRange * 0.1;
+    maxLat += latRange * 0.1;
+    minLng -= lngRange * 0.1;
+    maxLng += lngRange * 0.1;
+
+    // دالة لتحويل الإحداثيات إلى نقاط SVG
+    const latLngToSVG = (lat: number, lng: number) => {
+      const x = padding + ((lng - minLng) / (maxLng - minLng)) * (width - 2 * padding);
+      const y = height - padding - ((lat - minLat) / (maxLat - minLat)) * (height - 2 * padding);
+      return { x, y };
+    };
+
+    const severityColors: { [key: string]: string } = {
+      high: '#ef4444',
+      medium: '#f59e0b',
+      low: '#10b981'
+    };
+
+    // إنشاء SVG
+    let svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <defs>
+    <style>
+      .marker-text { font-family: Arial, sans-serif; font-size: 14px; fill: white; }
+      .title-text { font-family: Arial, sans-serif; font-size: 24px; fill: white; font-weight: bold; }
+      .coord-text { font-family: monospace; font-size: 10px; fill: #999; }
+    </style>
+  </defs>
+  
+  <!-- خلفية -->
+  <rect width="${width}" height="${height}" fill="#0a1929"/>
+  
+  <!-- شبكة الإحداثيات -->
+  <g opacity="0.2">`;
+
+    // خطوط الشبكة
+    for (let i = 0; i <= 10; i++) {
+      const x = padding + (i / 10) * (width - 2 * padding);
+      const y = padding + (i / 10) * (height - 2 * padding);
+      svg += `
+    <line x1="${x}" y1="${padding}" x2="${x}" y2="${height - padding}" stroke="#444" stroke-width="1"/>
+    <line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="#444" stroke-width="1"/>`;
+    }
+
+    svg += `
+  </g>
+  
+  <!-- العنوان -->
+  <text x="${width / 2}" y="50" text-anchor="middle" class="title-text">خريطة بحرية عسكرية</text>
+  
+  <!-- النقاط -->
+  <g>`;
+
+    markers.forEach(marker => {
+      const { x, y } = latLngToSVG(marker.lat, marker.lng);
+      const color = severityColors[marker.severity || 'low'];
+      
+      svg += `
+    <g>
+      <!-- دائرة النقطة -->
+      <circle cx="${x}" cy="${y}" r="8" fill="${color}" opacity="0.3"/>
+      <circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="white" stroke-width="2"/>
+      
+      <!-- اسم النقطة -->
+      <text x="${x}" y="${y - 15}" text-anchor="middle" class="marker-text">${marker.name_ar}</text>
+      
+      <!-- الإحداثيات -->
+      <text x="${x}" y="${y + 25}" text-anchor="middle" class="coord-text">${marker.lat.toFixed(4)}, ${marker.lng.toFixed(4)}</text>
+    </g>`;
+    });
+
+    svg += `
+  </g>
+  
+  <!-- مفتاح الألوان -->
+  <g transform="translate(${width - 200}, ${height - 150})">
+    <rect width="180" height="120" fill="rgba(0,0,0,0.8)" rx="8"/>
+    <text x="90" y="25" text-anchor="middle" class="marker-text" font-weight="bold">مستوى الأهمية</text>
+    
+    <circle cx="30" cy="50" r="6" fill="#10b981"/>
+    <text x="50" y="55" class="marker-text">منخفض</text>
+    
+    <circle cx="30" cy="75" r="6" fill="#f59e0b"/>
+    <text x="50" y="80" class="marker-text">متوسط</text>
+    
+    <circle cx="30" cy="100" r="6" fill="#ef4444"/>
+    <text x="50" y="105" class="marker-text">عالي</text>
+  </g>
+  
+  <!-- تفاصيل الخريطة -->
+  <text x="20" y="${height - 20}" class="coord-text">تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</text>
+  <text x="${width - 20}" y="${height - 20}" text-anchor="end" class="coord-text">عدد النقاط: ${markers.length}</text>
+</svg>`;
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `naval-map-${Date.now()}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "تم التصدير",
+      description: "تم تصدير الخريطة بصيغة SVG",
+    });
+  };
+
+  const exportVector = () => {
+    // تصدير بصيغة vector متقدمة (KML/KMZ format)
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>خريطة بحرية عسكرية</name>
+    <description>نقاط مخصصة تم تصديرها من نظام الخرائط البحرية</description>
+    
+    <!-- أنماط النقاط -->
+    <Style id="severity-low">
+      <IconStyle>
+        <color>ff81c910</color>
+        <scale>1.2</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    
+    <Style id="severity-medium">
+      <IconStyle>
+        <color>ff0b9ef5</color>
+        <scale>1.2</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    
+    <Style id="severity-high">
+      <IconStyle>
+        <color>ff4444ef</color>
+        <scale>1.2</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    
+`;
+
+    markers.forEach(marker => {
+      kml += `    <Placemark>
+      <name>${marker.name_ar}</name>
+      <description><![CDATA[
+        <h3>${marker.name_ar}</h3>
+        <p><strong>النوع:</strong> ${marker.type}</p>
+        ${marker.description_ar ? `<p><strong>الوصف:</strong> ${marker.description_ar}</p>` : ''}
+        <p><strong>الإحداثيات:</strong> ${marker.lat.toFixed(6)}, ${marker.lng.toFixed(6)}</p>
+        <p><strong>الأهمية:</strong> ${marker.severity || 'low'}</p>
+      ]]></description>
+      <styleUrl>#severity-${marker.severity || 'low'}</styleUrl>
+      <Point>
+        <coordinates>${marker.lng},${marker.lat},0</coordinates>
+      </Point>
+    </Placemark>
+`;
+    });
+
+    kml += `  </Document>
+</kml>`;
+
+    const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `naval-map-${Date.now()}.kml`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "تم التصدير",
+      description: "تم تصدير الخريطة بصيغة KML (Vector)",
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 gap-2">
       <Button
@@ -268,6 +471,28 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       >
         <FileSpreadsheet className="w-4 h-4" />
         CSV
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportSVG}
+        disabled={markers.length === 0}
+      >
+        <FileImage className="w-4 h-4" />
+        SVG
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportVector}
+        disabled={markers.length === 0}
+      >
+        <Shapes className="w-4 h-4" />
+        Vector (KML)
       </Button>
 
       <Button
