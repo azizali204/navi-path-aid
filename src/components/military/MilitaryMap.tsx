@@ -95,6 +95,16 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     }
   }, [customMarkers]);
 
+  // إعادة حجم الخريطة عند فتح/إغلاق القائمة الجانبية
+  useEffect(() => {
+    if (map.current && isMapReady) {
+      // الانتظار قليلاً حتى تكتمل الأنميشن
+      setTimeout(() => {
+        map.current?.resize();
+      }, 350);
+    }
+  }, [sidebarOpen, isMapReady]);
+
   // تهيئة الخريطة عند توفر الـ token
   useEffect(() => {
     if (!mapContainer.current || map.current || !mapboxToken) return;
