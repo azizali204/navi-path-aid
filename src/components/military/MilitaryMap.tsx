@@ -130,6 +130,9 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         center,
         zoom,
         pitch: 0,
+        // مهم للتصدير: يسمح بقراءة Canvas الخاص بالخريطة
+        preserveDrawingBuffer: true,
+        antialias: true,
       });
 
       // إضافة عناصر التحكم
