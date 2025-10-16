@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes } from "lucide-react";
+import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes, Camera, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface MarkerData {
   id: number;
@@ -21,6 +22,8 @@ interface ExportPanelProps {
 
 export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   const { toast } = useToast();
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   const exportGeoJSON = () => {
     const geojson = {
@@ -449,6 +452,99 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     });
   };
 
+  const exportImage = () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const canvas = map.getCanvas();
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `naval-map-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "تم التصدير",
+        description: "تم حفظ صورة الخريطة",
+      });
+    });
+  };
+
+  const startRecording = async () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const canvas = map.getCanvas();
+      const stream = canvas.captureStream(30); // 30 FPS
+      
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm',
+      });
+
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `naval-map-${Date.now()}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "تم التسجيل",
+          description: "تم حفظ فيديو الخريطة",
+        });
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+
+      toast({
+        title: "بدأ التسجيل",
+        description: "جاري تسجيل الخريطة...",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل بدء التسجيل",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-2">
       <Button
@@ -505,8 +601,30 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         <FileCode className="w-4 h-4" />
         HTML تفاعلي (بوربوينت)
       </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={exportImage}
+        disabled={!map}
+      >
+        <Camera className="w-4 h-4" />
+        صورة PNG
+      </Button>
+
+      <Button
+        variant={isRecording ? "destructive" : "outline"}
+        size="sm"
+        className="gap-2 justify-start"
+        onClick={isRecording ? stopRecording : startRecording}
+        disabled={!map}
+      >
+        <Video className="w-4 h-4" />
+        {isRecording ? "إيقاف التسجيل" : "تسجيل فيديو"}
+      </Button>
       
-      {markers.length === 0 && (
+      {markers.length === 0 && !map && (
         <p className="text-xs text-muted-foreground mt-2 text-center">
           أضف نقاطاً للتصدير
         </p>
