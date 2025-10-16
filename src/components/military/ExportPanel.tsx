@@ -452,7 +452,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     });
   };
 
-  const exportImage = () => {
+  const exportImage = async () => {
     if (!map) {
       toast({
         title: "خطأ",
@@ -462,27 +462,35 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       return;
     }
 
-    // انتظار تحميل الخريطة بالكامل
-    map.once('idle', () => {
-      const canvas = map.getCanvas();
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `naval-map-${Date.now()}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
+    try {
+      // التقاط الخريطة الأساسية
+      map.once('render', () => {
+        const canvas = map.getCanvas();
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `naval-map-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
 
-        toast({
-          title: "تم التصدير",
-          description: "تم حفظ صورة الخريطة",
+          toast({
+            title: "تم التصدير ✓",
+            description: "تم حفظ صورة الخريطة. للحصول على الأيقونات، استخدم أداة لقطة الشاشة (Print Screen)",
+          });
         });
       });
-    });
-
-    // إعادة رسم الخريطة لضمان التحديث
-    map.triggerRepaint();
+      
+      map.triggerRepaint();
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل تصدير الصورة",
+        variant: "destructive",
+      });
+    }
   };
 
   const startRecording = () => {
@@ -497,10 +505,10 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
     try {
       const canvas = map.getCanvas();
-      const stream = canvas.captureStream(25); // 25 FPS
+      const stream = canvas.captureStream(30); // 30 FPS
       
       const recorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: 'video/webm',
       });
 
       const chunks: Blob[] = [];
@@ -521,8 +529,8 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         URL.revokeObjectURL(url);
 
         toast({
-          title: "تم التسجيل",
-          description: "تم حفظ فيديو الخريطة",
+          title: "تم التسجيل ✓",
+          description: "تم حفظ فيديو الخريطة. للحصول على الأيقونات، استخدم برنامج تسجيل شاشة",
         });
       };
 
@@ -535,6 +543,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         description: "جاري تسجيل الخريطة... (حرك الخريطة لتسجيل حركتها)",
       });
     } catch (error) {
+      console.error('خطأ في بدء التسجيل:', error);
       toast({
         title: "خطأ",
         description: "فشل بدء التسجيل",
