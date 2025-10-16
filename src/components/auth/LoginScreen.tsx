@@ -91,11 +91,6 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             تسجيل الدخول
           </Button>
         </form>
-
-        <div className="text-xs text-muted-foreground text-center space-y-1 border-t border-border pt-4">
-          <p className="font-mono">نسخة تجريبية MVP - للاختبار فقط</p>
-          <p>المستخدم: <span className="font-bold">user</span> | كلمة المرور: <span className="font-bold">Aa123456</span></p>
-        </div>
       </Card>
     </div>
   );
