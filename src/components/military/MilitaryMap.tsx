@@ -58,6 +58,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     'helipad', 'minefield', 'barracks'
   ]));
   const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [allMarkers, setAllMarkers] = useState<MarkerFeature[]>([]);
   const [customMarkers, setCustomMarkers] = useState<MarkerData[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -528,23 +529,46 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   return (
     <div className="relative h-screen w-full flex" dir="rtl">
       {/* القائمة الجانبية */}
-      <MapSidebar
-        activeCategories={activeCategories}
-        onToggleCategory={toggleCategory}
-        customMarkers={customMarkers}
-        onAddMarker={handleAddMarker}
-        onEditMarker={handleEditMarker}
-        onDeleteMarker={handleDeleteMarker}
-        onFocusMarker={handleFocusMarker}
-        onSaveView={saveView}
-        searchTerm={searchTerm}
-        onSearch={handleSearch}
-        map={map.current}
-      />
+      <div 
+        className={`transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'w-96' : 'w-0'
+        } overflow-hidden`}
+      >
+        <MapSidebar
+          activeCategories={activeCategories}
+          onToggleCategory={toggleCategory}
+          customMarkers={customMarkers}
+          onAddMarker={handleAddMarker}
+          onEditMarker={handleEditMarker}
+          onDeleteMarker={handleDeleteMarker}
+          onFocusMarker={handleFocusMarker}
+          onSaveView={saveView}
+          searchTerm={searchTerm}
+          onSearch={handleSearch}
+          map={map.current}
+        />
+      </div>
 
       {/* الخريطة */}
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
+
+      {/* زر إظهار/إخفاء القائمة الجانبية */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="absolute top-4 right-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+        title={sidebarOpen ? "إخفاء لوحة التحكم" : "إظهار لوحة التحكم"}
+      >
+        <svg
+          className={`w-5 h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        </svg>
+        {sidebarOpen ? 'إخفاء' : 'إظهار'}
+      </button>
 
       {/* عنصر تحكم نوع الخريطة */}
       <div className="absolute top-4 left-4 z-[10] flex gap-2">
