@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Link } from "react-router-dom";
 import { 
   Plus, 
   Save, 
@@ -17,7 +18,8 @@ import {
   Pencil,
   Trash2,
   Download,
-  Menu
+  Menu,
+  Ship
 } from "lucide-react";
 import { IconLabelsAr, CategoryLabelsAr, IconCategories } from "./MilitarySymbolIcons";
 import { MarkersTable } from "./MarkersTable";
@@ -92,15 +94,23 @@ export const MapSidebar = ({
         </div>
 
         {/* أزرار رئيسية */}
-        <div className="flex gap-2">
-          <Button onClick={onAddMarker} className="flex-1 gap-2 h-9 sm:h-10 text-sm sm:text-base">
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            إضافة نقطة
-          </Button>
-          <Button onClick={onSaveView} variant="outline" className="gap-2 h-9 sm:h-10 text-sm sm:text-base">
-            <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            حفظ
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Button onClick={onAddMarker} className="flex-1 gap-2 h-9 sm:h-10 text-sm sm:text-base">
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              إضافة نقطة
+            </Button>
+            <Button onClick={onSaveView} variant="outline" className="gap-2 h-9 sm:h-10 text-sm sm:text-base">
+              <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              حفظ
+            </Button>
+          </div>
+          <Link to="/maritime" className="w-full">
+            <Button variant="secondary" className="w-full gap-2 h-9 sm:h-10 text-sm sm:text-base">
+              <Ship className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              خريطة حركة السفن
+            </Button>
+          </Link>
         </div>
       </div>
 
