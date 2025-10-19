@@ -125,37 +125,6 @@ const Maritime = () => {
     return true;
   });
 
-  const renderMapChildren = () => (
-    <>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
-      {layersVisible.seamarks ? (
-        <TileLayer
-          url="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
-          attribution='Marine: <a href="http://www.openseamap.org">OpenSeaMap</a>'
-        />
-      ) : null}
-      {layersVisible.ships ? (
-        <MaritimeShipMarkers ships={filteredShips} />
-      ) : null}
-      {layersVisible.zone ? (
-        <Circle
-          center={operationZone.center as LatLngExpression}
-          radius={operationZone.radius}
-          pathOptions={{
-            color: tracking ? '#ef4444' : '#3b82f6',
-            fillColor: tracking ? '#ef4444' : '#3b82f6',
-            fillOpacity: 0.1,
-            weight: 2,
-            className: tracking ? 'animate-pulse' : ''
-          }}
-        />
-      ) : null}
-    </>
-  );
-
   return (
     <div className="relative w-full h-screen flex flex-col">
       {/* Header */}
@@ -256,7 +225,32 @@ const Maritime = () => {
             className="w-full h-full"
             zoomControl={true}
           >
-            {renderMapChildren as unknown as React.ReactNode}
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            />
+            {layersVisible.seamarks ? (
+              <TileLayer
+                url="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
+                attribution='Marine: <a href="http://www.openseamap.org">OpenSeaMap</a>'
+              />
+            ) : null}
+            {layersVisible.ships ? (
+              <MaritimeShipMarkers ships={filteredShips} />
+            ) : null}
+            {layersVisible.zone ? (
+              <Circle
+                center={operationZone.center as LatLngExpression}
+                radius={operationZone.radius}
+                pathOptions={{
+                  color: tracking ? '#ef4444' : '#3b82f6',
+                  fillColor: tracking ? '#ef4444' : '#3b82f6',
+                  fillOpacity: 0.1,
+                  weight: 2,
+                  className: tracking ? 'animate-pulse' : ''
+                }}
+              />
+            ) : null}
           </MapContainer>
         </div>
       </div>
