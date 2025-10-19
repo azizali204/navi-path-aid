@@ -1,7 +1,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { DivIcon, LatLngExpression } from 'leaflet';
-import { Ship } from '@/pages/Maritime';
+import type { Ship } from '@/pages/Maritime';
 
 interface MaritimeShipMarkersProps {
   ships: Ship[];

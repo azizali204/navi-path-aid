@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Ship, Target, Layers, Eye, EyeOff } from 'lucide-react';
+import { Ship as ShipIcon, Target, Layers, Eye, EyeOff } from 'lucide-react';
 import MaritimeShipMarkers from '@/components/maritime/MaritimeShipMarkers';
 import MaritimeFilters from '@/components/maritime/MaritimeFilters';
 import OperationZoneEditor from '@/components/maritime/OperationZoneEditor';
@@ -44,7 +44,7 @@ const Maritime = () => {
 
   const connectWebSocket = useCallback(() => {
     const projectId = 'mvtowcdrwyzbcmwpuppl';
-    const wsUrl = `wss://${projectId}.supabase.co/functions/v1/ais-stream`;
+    const wsUrl = `wss://${projectId}.functions.supabase.co/functions/v1/ais-stream`;
     
     console.log('Attempting to connect to:', wsUrl);
     const socket = new WebSocket(wsUrl);
@@ -130,7 +130,7 @@ const Maritime = () => {
       {/* Header */}
       <div className="bg-background border-b p-2 sm:p-4 flex items-center justify-between gap-2 sm:gap-4 z-10">
         <div className="flex items-center gap-2">
-          <Ship className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          <ShipIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           <h1 className="text-lg sm:text-2xl font-bold">خريطة حركة السفن البحرية</h1>
         </div>
         <div className="flex items-center gap-2">

@@ -1,1 +1,4 @@
 project_id = "mvtowcdrwyzbcmwpuppl"
+
+[functions.ais-stream]
+verify_jwt = false

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Target, X } from 'lucide-react';
-import { Ship, OperationZone } from '@/pages/Maritime';
+import type { Ship, OperationZone } from '@/pages/Maritime';
 import { useToast } from '@/components/ui/use-toast';
 
 interface ZoneTrackerProps {
