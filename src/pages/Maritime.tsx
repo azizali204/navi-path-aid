@@ -46,6 +46,7 @@ const Maritime = () => {
     const projectId = 'mvtowcdrwyzbcmwpuppl';
     const wsUrl = `wss://${projectId}.supabase.co/functions/v1/ais-stream`;
     
+    console.log('Attempting to connect to:', wsUrl);
     const socket = new WebSocket(wsUrl);
     
     socket.onopen = () => {
@@ -74,22 +75,26 @@ const Maritime = () => {
     
     socket.onerror = (error) => {
       console.error('WebSocket error:', error);
-      toast({
-        title: "خطأ في الاتصال",
-        description: "فشل الاتصال ببث السفن",
-        variant: "destructive",
-      });
+      // Don't show toast on every error to avoid spam
     };
     
-    socket.onclose = () => {
-      console.log('Disconnected from AIS stream');
+    socket.onclose = (event) => {
+      console.log('Disconnected from AIS stream. Code:', event.code, 'Reason:', event.reason);
       setConnected(false);
       setWs(null);
+      
+      // Only show error toast if not a normal closure
+      if (event.code !== 1000) {
+        toast({
+          title: "انقطع الاتصال",
+          description: "سيتم إعادة المحاولة تلقائياً...",
+          variant: "destructive",
+        });
+      }
+      
       // Auto-reconnect after 5 seconds
       setTimeout(() => {
-        if (!ws || ws.readyState === WebSocket.CLOSED) {
-          connectWebSocket();
-        }
+        connectWebSocket();
       }, 5000);
     };
     
@@ -225,18 +230,18 @@ const Maritime = () => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             
-            {layersVisible.seamarks && (
+            {layersVisible.seamarks ? (
               <TileLayer
                 url="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
                 attribution='Marine: <a href="http://www.openseamap.org">OpenSeaMap</a>'
               />
-            )}
+            ) : null}
 
-            {layersVisible.ships && (
+            {layersVisible.ships ? (
               <MaritimeShipMarkers ships={filteredShips} />
-            )}
+            ) : null}
 
-            {layersVisible.zone && (
+            {layersVisible.zone ? (
               <Circle
                 center={operationZone.center as LatLngExpression}
                 radius={operationZone.radius}
@@ -248,7 +253,7 @@ const Maritime = () => {
                   className: tracking ? 'animate-pulse' : ''
                 }}
               />
-            )}
+            ) : null}
           </MapContainer>
         </div>
       </div>
