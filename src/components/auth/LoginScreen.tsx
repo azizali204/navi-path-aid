@@ -41,24 +41,24 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-card">
-        <div className="flex flex-col items-center space-y-3">
-          <div className="flex items-center gap-3">
-            <Shield className="w-10 h-10 text-primary" />
-            <Anchor className="w-10 h-10 text-accent" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-3 sm:p-4 md:p-6" dir="rtl">
+      <Card className="w-full max-w-md p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 bg-card">
+        <div className="flex flex-col items-center space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+            <Anchor className="w-8 h-8 sm:w-10 sm:h-10 text-accent" />
           </div>
-          <h1 className="text-3xl font-bold text-center text-foreground">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-foreground">
             نظام الخرائط البحرية العسكرية
           </h1>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-xs sm:text-sm text-muted-foreground text-center">
             نسخة تجريبية - Private Naval Map Demo
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium text-foreground">
+            <label htmlFor="username" className="text-xs sm:text-sm font-medium text-foreground">
               اسم المستخدم
             </label>
             <Input
@@ -67,13 +67,13 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
               placeholder="اسم المستخدم"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="text-right"
+              className="text-right h-10 sm:h-11"
               dir="rtl"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-foreground">
+            <label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
               كلمة المرور
             </label>
             <Input
@@ -82,12 +82,12 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
               placeholder="كلمة المرور"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="text-right"
+              className="text-right h-10 sm:h-11"
               dir="rtl"
             />
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full h-10 sm:h-11 text-sm sm:text-base">
             تسجيل الدخول
           </Button>
         </form>

@@ -695,86 +695,87 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-2">
+    <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportGeoJSON}
         disabled={markers.length === 0}
       >
-        <FileJson className="w-4 h-4" />
+        <FileJson className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         GeoJSON
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportCSV}
         disabled={markers.length === 0}
       >
-        <FileSpreadsheet className="w-4 h-4" />
+        <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         CSV
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportSVG}
         disabled={markers.length === 0}
       >
-        <FileImage className="w-4 h-4" />
+        <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         SVG
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportVector}
         disabled={markers.length === 0}
       >
-        <Shapes className="w-4 h-4" />
+        <Shapes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         Vector (KML)
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportHTML}
         disabled={markers.length === 0}
       >
-        <FileCode className="w-4 h-4" />
-        HTML تفاعلي (بوربوينت)
+        <FileCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <span className="hidden sm:inline">HTML تفاعلي (بوربوينت)</span>
+        <span className="sm:hidden">HTML</span>
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportImage}
         disabled={!map}
       >
-        <Camera className="w-4 h-4" />
+        <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         صورة PNG
       </Button>
 
       <Button
         variant={isRecording ? "destructive" : "outline"}
         size="sm"
-        className="gap-2 justify-start"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={isRecording ? stopRecording : startRecording}
         disabled={!map}
       >
-        <Video className="w-4 h-4" />
+        <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         {isRecording ? "إيقاف التسجيل" : "تسجيل فيديو"}
       </Button>
       
       {markers.length === 0 && !map && (
-        <p className="text-xs text-muted-foreground mt-2 text-center">
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-2 text-center">
           أضف نقاطاً للتصدير
         </p>
       )}

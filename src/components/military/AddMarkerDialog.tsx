@@ -114,35 +114,35 @@ export const AddMarkerDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-2xl max-h-[90vh] w-[calc(100vw-2rem)] sm:w-full overflow-y-auto p-4 sm:p-6" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
+          <DialogTitle className="text-lg sm:text-xl md:text-2xl">
             {initialData ? 'تعديل نقطة' : 'إضافة نقطة جديدة'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
           {/* الاسم */}
           <div className="space-y-2">
-            <Label htmlFor="name">الاسم *</Label>
+            <Label htmlFor="name" className="text-xs sm:text-sm">الاسم *</Label>
             <Input
               id="name"
               placeholder="مثال: قاعدة الملك فيصل البحرية"
               value={formData.name_ar}
               onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-              className="text-right"
+              className="text-right h-9 sm:h-10 text-sm sm:text-base"
             />
           </div>
 
           {/* النوع والفئة */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">النوع *</Label>
+              <Label htmlFor="type" className="text-xs sm:text-sm">النوع *</Label>
               <Select 
                 value={formData.type} 
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,12 +166,12 @@ export const AddMarkerDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="severity">مستوى الأهمية</Label>
+              <Label htmlFor="severity" className="text-xs sm:text-sm">مستوى الأهمية</Label>
               <Select 
                 value={formData.severity} 
                 onValueChange={(value: any) => setFormData({ ...formData, severity: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,19 +185,19 @@ export const AddMarkerDialog = ({
 
           {/* الوصف */}
           <div className="space-y-2">
-            <Label htmlFor="description">الوصف</Label>
+            <Label htmlFor="description" className="text-xs sm:text-sm">الوصف</Label>
             <Textarea
               id="description"
               placeholder="وصف مختصر للنقطة..."
               value={formData.description_ar}
               onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-              className="text-right min-h-[80px]"
+              className="text-right min-h-[60px] sm:min-h-[80px] text-sm sm:text-base"
             />
           </div>
 
           {/* اختيار الأيقونة */}
           <div className="space-y-2">
-            <Label>اختيار الأيقونة *</Label>
+            <Label className="text-xs sm:text-sm">اختيار الأيقونة *</Label>
             <IconPicker
               selectedIcon={formData.icon}
               onSelectIcon={(icon) => setFormData({ ...formData, icon })}
@@ -205,24 +205,24 @@ export const AddMarkerDialog = ({
           </div>
 
           {/* الإحداثيات */}
-          <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg">الإحداثيات</Label>
+          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 border rounded-lg bg-muted/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <Label className="text-base sm:text-lg">الإحداثيات</Label>
               <Button
                 type="button"
                 variant={pickingCoordinates ? "destructive" : "outline"}
                 size="sm"
                 onClick={onPickCoordinates}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto h-9 text-xs sm:text-sm"
               >
-                <Target className="w-4 h-4" />
+                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {pickingCoordinates ? 'إلغاء الالتقاط' : 'التقاط من الخريطة'}
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="lat">خط العرض (Latitude)</Label>
+                <Label htmlFor="lat" className="text-xs sm:text-sm">خط العرض (Latitude)</Label>
                 <Input
                   id="lat"
                   type="number"
@@ -231,11 +231,12 @@ export const AddMarkerDialog = ({
                   value={formData.lat}
                   onChange={(e) => setFormData({ ...formData, lat: parseFloat(e.target.value) || 0 })}
                   dir="ltr"
+                  className="h-9 sm:h-10 text-sm sm:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lng">خط الطول (Longitude)</Label>
+                <Label htmlFor="lng" className="text-xs sm:text-sm">خط الطول (Longitude)</Label>
                 <Input
                   id="lng"
                   type="number"
@@ -244,24 +245,25 @@ export const AddMarkerDialog = ({
                   value={formData.lng}
                   onChange={(e) => setFormData({ ...formData, lng: parseFloat(e.target.value) || 0 })}
                   dir="ltr"
+                  className="h-9 sm:h-10 text-sm sm:text-base"
                 />
               </div>
             </div>
 
             {pickingCoordinates && (
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                <MapPin className="w-4 h-4 animate-pulse" />
+              <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse" />
                 انقر على الخريطة لتحديد الموقع...
               </div>
             )}
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="gap-2 flex-col sm:flex-row">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base">
             إلغاء
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} className="w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base">
             {initialData ? 'تحديث' : 'حفظ النقطة'}
           </Button>
         </DialogFooter>

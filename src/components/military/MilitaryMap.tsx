@@ -504,21 +504,21 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   // عرض نموذج إدخال الـ token إذا لم يتم إدخاله
   if (!mapboxToken) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background" dir="rtl">
-        <Card className="p-8 max-w-md w-full mx-4">
-          <h2 className="text-2xl font-bold mb-4 text-center">رمز Mapbox مطلوب</h2>
-          <p className="text-muted-foreground mb-6 text-center">
+      <div className="h-screen w-full flex items-center justify-center bg-background p-3 sm:p-4" dir="rtl">
+        <Card className="p-4 sm:p-6 md:p-8 max-w-md w-full">
+          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-center">رمز Mapbox مطلوب</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6 text-center">
             للبدء، أدخل رمز Mapbox العام الخاص بك
           </p>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <Label htmlFor="token">Mapbox Public Token</Label>
+              <Label htmlFor="token" className="text-xs sm:text-sm">Mapbox Public Token</Label>
               <Input
                 id="token"
                 type="text"
                 placeholder="pk.eyJ1..."
                 dir="ltr"
-                className="font-mono"
+                className="font-mono text-xs sm:text-sm h-10 sm:h-11"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const value = (e.target as HTMLInputElement).value.trim();
@@ -530,7 +530,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
                 }}
               />
             </div>
-            <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
+            <div className="text-xs sm:text-sm text-muted-foreground bg-muted p-2 sm:p-3 rounded">
               <p className="mb-2">للحصول على الرمز:</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>انتقل إلى <a href="https://mapbox.com" target="_blank" className="text-primary hover:underline">mapbox.com</a></li>
@@ -546,12 +546,29 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
 
   return (
     <div className="relative h-screen w-full flex" dir="rtl">
-      {/* القائمة الجانبية */}
+      {/* القائمة الجانبية - مخفية على الموبايل */}
       <div 
-        className={`transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'w-96' : 'w-0'
+        className={`hidden md:block transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'w-80 lg:w-96' : 'w-0'
         } overflow-hidden`}
       >
+        <MapSidebar
+          activeCategories={activeCategories}
+          onToggleCategory={toggleCategory}
+          customMarkers={customMarkers}
+          onAddMarker={handleAddMarker}
+          onEditMarker={handleEditMarker}
+          onDeleteMarker={handleDeleteMarker}
+          onFocusMarker={handleFocusMarker}
+          onSaveView={saveView}
+          searchTerm={searchTerm}
+          onSearch={handleSearch}
+          map={map.current}
+        />
+      </div>
+
+      {/* القائمة الجانبية للموبايل - عبر Sheet */}
+      <div className="md:hidden">
         <MapSidebar
           activeCategories={activeCategories}
           onToggleCategory={toggleCategory}
@@ -571,33 +588,34 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
 
-      {/* زر إظهار/إخفاء القائمة الجانبية */}
+      {/* زر إظهار/إخفاء القائمة الجانبية - مخفي على الموبايل */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="absolute top-4 right-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+        className="hidden md:flex absolute top-2 sm:top-4 right-2 sm:right-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-accent transition-colors items-center gap-1 sm:gap-2"
         title={sidebarOpen ? "إخفاء لوحة التحكم" : "إظهار لوحة التحكم"}
       >
         <svg
-          className={`w-5 h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`}
+          className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
         </svg>
-        {sidebarOpen ? 'إخفاء' : 'إظهار'}
+        <span className="hidden sm:inline">{sidebarOpen ? 'إخفاء' : 'إظهار'}</span>
       </button>
 
       {/* عنصر تحكم نوع الخريطة */}
-      <div className="absolute top-4 left-4 z-[10] flex gap-2">
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-[10] flex gap-1 sm:gap-2">
         <button
           onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
-          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-accent transition-colors flex items-center gap-1 sm:gap-2"
           title="تغيير نوع الخريطة"
         >
-          🗺️ نوع الخريطة
+          <span className="text-base sm:text-lg">🗺️</span>
+          <span className="hidden sm:inline">نوع الخريطة</span>
           <svg
-            className={`w-4 h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
+            className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -608,22 +626,23 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         
         <button
           onClick={onLogout}
-          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-3 py-2 text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-2"
+          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-1 sm:gap-2"
           title="تسجيل الخروج"
         >
-          🚪 خروج
+          <span className="text-base sm:text-lg">🚪</span>
+          <span className="hidden sm:inline">خروج</span>
         </button>
       </div>
       
       {mapStyleMenuOpen && (
-        <div className="absolute top-[52px] left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in">
-          <div className="p-2 space-y-1">
+        <div className="absolute top-[42px] sm:top-[52px] left-2 sm:left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in max-w-[calc(100vw-2rem)] sm:max-w-none">
+          <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
                 <button
                   onClick={() => {
                     changeMapStyle('mapbox://styles/mapbox/satellite-v9');
                     setMapStyleMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
                     mapStyle === 'mapbox://styles/mapbox/satellite-v9' ? 'bg-accent' : ''
                   }`}
                   title="أقمار صناعية"
@@ -635,7 +654,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
                     changeMapStyle('mapbox://styles/mapbox/satellite-streets-v12');
                     setMapStyleMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
                     mapStyle === 'mapbox://styles/mapbox/satellite-streets-v12' ? 'bg-accent' : ''
                   }`}
                   title="أقمار صناعية + شوارع"
@@ -647,7 +666,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
                     changeMapStyle('mapbox://styles/mapbox/streets-v12');
                     setMapStyleMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
                     mapStyle === 'mapbox://styles/mapbox/streets-v12' ? 'bg-accent' : ''
                   }`}
                   title="شوارع"
@@ -659,7 +678,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
                     changeMapStyle('mapbox://styles/mapbox/dark-v11');
                     setMapStyleMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
                     mapStyle === 'mapbox://styles/mapbox/dark-v11' ? 'bg-accent' : ''
                   }`}
                   title="داكن"
@@ -671,7 +690,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
                     changeMapStyle('mapbox://styles/mapbox/light-v11');
                     setMapStyleMenuOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-sm rounded hover:bg-accent transition-colors text-right ${
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
                     mapStyle === 'mapbox://styles/mapbox/light-v11' ? 'bg-accent' : ''
                   }`}
                   title="فاتح"
@@ -683,9 +702,10 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       )}
 
       {/* شريط الإحداثيات */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[10] bg-card/95 backdrop-blur px-4 py-2 rounded-lg border border-border shadow-lg">
-          <div className="text-sm font-mono text-foreground" dir="ltr">
-            Lat: {coordinates.lat.toFixed(4)}° | Lng: {coordinates.lng.toFixed(4)}°
+        <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-[10] bg-card/95 backdrop-blur px-2 sm:px-4 py-1 sm:py-2 rounded-lg border border-border shadow-lg">
+          <div className="text-[10px] sm:text-xs md:text-sm font-mono text-foreground whitespace-nowrap" dir="ltr">
+            <span className="hidden sm:inline">Lat: {coordinates.lat.toFixed(4)}° | Lng: {coordinates.lng.toFixed(4)}°</span>
+            <span className="sm:hidden">{coordinates.lat.toFixed(3)}°, {coordinates.lng.toFixed(3)}°</span>
           </div>
         </div>
       </div>
@@ -709,7 +729,33 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         .mapboxgl-popup-content {
           background: rgba(255, 255, 255, 0.98);
           border-radius: 8px;
-          padding: 12px;
+          padding: 8px;
+          font-size: 14px;
+        }
+        @media (min-width: 640px) {
+          .mapboxgl-popup-content {
+            padding: 12px;
+          }
+        }
+        .mapboxgl-ctrl-bottom-left,
+        .mapboxgl-ctrl-bottom-right {
+          margin: 8px !important;
+        }
+        @media (min-width: 640px) {
+          .mapboxgl-ctrl-bottom-left,
+          .mapboxgl-ctrl-bottom-right {
+            margin: 16px !important;
+          }
+        }
+        .mapboxgl-ctrl button {
+          width: 32px !important;
+          height: 32px !important;
+        }
+        @media (min-width: 640px) {
+          .mapboxgl-ctrl button {
+            width: 29px !important;
+            height: 29px !important;
+          }
         }
         ${pickingCoordinates ? `
         .mapboxgl-canvas-container {

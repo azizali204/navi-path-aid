@@ -138,7 +138,7 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
     }
 
     return (
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
         {filtered.map((iconKey) => {
           const isSelected = selectedIcon === iconKey;
           return (
@@ -147,7 +147,7 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
               type="button"
               onClick={() => onSelectIcon(iconKey)}
               className={`
-                flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all
+                flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all
                 hover:border-primary hover:bg-primary/10
                 ${isSelected ? 'border-primary bg-primary/20' : 'border-border'}
               `}
@@ -155,9 +155,9 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
             >
               <div 
                 dangerouslySetInnerHTML={{ __html: MilitarySymbolIcons[iconKey as keyof typeof MilitarySymbolIcons] }}
-                className="w-8 h-8"
+                className="w-6 h-6 sm:w-8 sm:h-8"
               />
-              <span className="text-xs text-center line-clamp-2">
+              <span className="text-[10px] sm:text-xs text-center line-clamp-2">
                 {IconLabelsAr[iconKey]}
               </span>
             </button>
@@ -179,7 +179,7 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
     }
 
     return (
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
         {filtered.map((customIcon) => {
           const isSelected = selectedIcon === customIcon.id;
           return (
@@ -188,7 +188,7 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
                 type="button"
                 onClick={() => onSelectIcon(customIcon.id)}
                 className={`
-                  flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all w-full
+                  flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all w-full
                   hover:border-primary hover:bg-primary/10
                   ${isSelected ? 'border-primary bg-primary/20' : 'border-border'}
                 `}
@@ -197,19 +197,19 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
                 <img 
                   src={customIcon.dataUrl} 
                   alt={customIcon.name}
-                  className="w-8 h-8 object-contain"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                 />
-                <span className="text-xs text-center line-clamp-2">
+                <span className="text-[10px] sm:text-xs text-center line-clamp-2">
                   {customIcon.name}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => deleteCustomIcon(customIcon.id)}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 sm:p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="حذف"
               >
-                <X className="w-3 h-3" />
+                <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </button>
             </div>
           );
@@ -252,33 +252,33 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
   };
 
   return (
-    <div className="space-y-4 border rounded-lg p-4">
+    <div className="space-y-3 sm:space-y-4 border rounded-lg p-3 sm:p-4">
       {/* معاينة الأيقونة المختارة */}
-      <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+      <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted rounded-lg">
         {getSelectedIconDisplay()}
       </div>
 
       {/* بحث ورفع */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="ابحث عن أيقونة..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
+            className="pr-8 sm:pr-10 h-9 sm:h-10 text-sm sm:text-base"
           />
         </div>
         <Button
           type="button"
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
-          className="gap-2"
+          className="gap-2 h-9 sm:h-10 text-xs sm:text-sm w-full sm:w-auto"
           title="رفع أيقونة من جهازك"
         >
-          <Upload className="w-4 h-4" />
-          رفع أيقونة
+          <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="sm:inline">رفع أيقونة</span>
         </Button>
         <input
           ref={fileInputRef}
@@ -291,17 +291,17 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
 
       {/* تبويبات الفئات */}
       <Tabs defaultValue="all" dir="rtl">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-8">
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="custom">مخصصة ({customIcons.length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 text-xs sm:text-sm h-auto">
+          <TabsTrigger value="all" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2">الكل</TabsTrigger>
+          <TabsTrigger value="custom" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2">مخصصة ({customIcons.length})</TabsTrigger>
           {Object.entries(CategoryLabelsAr).map(([key, label]) => (
-            <TabsTrigger key={key} value={key}>
+            <TabsTrigger key={key} value={key} className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2">
               {label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <ScrollArea className="h-[300px] mt-4">
+        <ScrollArea className="h-[250px] sm:h-[300px] mt-3 sm:mt-4">
           <TabsContent value="all" className="mt-0">
             {renderIconGrid(Object.keys(MilitarySymbolIcons))}
           </TabsContent>
