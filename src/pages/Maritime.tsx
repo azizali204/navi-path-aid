@@ -169,28 +169,28 @@ const Maritime = () => {
 
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Sidebar */}
-        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-background overflow-y-auto">
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-background overflow-y-auto max-h-[40vh] lg:max-h-none">
           <Tabs defaultValue="filters" className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="filters" className="text-xs sm:text-sm">
-                <Target className="h-4 w-4 ml-1" />
+            <TabsList className="w-full grid grid-cols-3 sticky top-0 z-10 bg-background">
+              <TabsTrigger value="filters" className="text-xs sm:text-sm py-2">
+                <Target className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 فلترة
               </TabsTrigger>
-              <TabsTrigger value="zone" className="text-xs sm:text-sm">
-                <Layers className="h-4 w-4 ml-1" />
+              <TabsTrigger value="zone" className="text-xs sm:text-sm py-2">
+                <Layers className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 المنطقة
               </TabsTrigger>
-              <TabsTrigger value="layers" className="text-xs sm:text-sm">
-                <Eye className="h-4 w-4 ml-1" />
+              <TabsTrigger value="layers" className="text-xs sm:text-sm py-2">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 الطبقات
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="filters" className="p-3 sm:p-4">
+            <TabsContent value="filters" className="p-2 sm:p-4">
               <MaritimeFilters filters={filters} onFiltersChange={setFilters} />
             </TabsContent>
 
-            <TabsContent value="zone" className="p-3 sm:p-4">
+            <TabsContent value="zone" className="p-2 sm:p-4">
               <OperationZoneEditor 
                 zone={operationZone} 
                 onZoneChange={setOperationZone}
@@ -205,7 +205,7 @@ const Maritime = () => {
               />
             </TabsContent>
 
-            <TabsContent value="layers" className="p-3 sm:p-4">
+            <TabsContent value="layers" className="p-2 sm:p-4">
               <div className="space-y-3">
                 <h3 className="font-semibold mb-2">طبقات الخريطة</h3>
                 <div className="flex items-center justify-between">
