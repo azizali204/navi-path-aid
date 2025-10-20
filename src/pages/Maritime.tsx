@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Ship as ShipIcon, Target, Layers, Eye, EyeOff } from 'lucide-react';
+import { Ship as ShipIcon, Target, Layers, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MaritimeShipMarkers from '@/components/maritime/MaritimeShipMarkers';
 import MaritimeFilters from '@/components/maritime/MaritimeFilters';
 import OperationZoneEditor from '@/components/maritime/OperationZoneEditor';
 import ZoneTracker from '@/components/maritime/ZoneTracker';
+import MapClickHandler from '@/components/maritime/MapClickHandler';
 import { useToast } from '@/components/ui/use-toast';
 
 export interface Ship {
@@ -31,6 +33,7 @@ export interface OperationZone {
 
 const Maritime = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [ships, setShips] = useState<Map<number, Ship>>(new Map());
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -41,6 +44,7 @@ const Maritime = () => {
   });
   const [tracking, setTracking] = useState(false);
   const [layersVisible, setLayersVisible] = useState({ ships: true, zone: true, seamarks: true });
+  const [clickToSetZone, setClickToSetZone] = useState(false);
 
   const connectWebSocket = useCallback(() => {
     const projectId = 'mvtowcdrwyzbcmwpuppl';
@@ -115,6 +119,18 @@ const Maritime = () => {
     localStorage.setItem('operation_zone', JSON.stringify(operationZone));
   }, [operationZone]);
 
+  const handleMapClick = useCallback((lat: number, lon: number) => {
+    setOperationZone(prev => ({
+      ...prev,
+      center: [lat, lon]
+    }));
+    setClickToSetZone(false);
+    toast({
+      title: "تم تحديث الإحداثيات",
+      description: `تم تعيين المركز إلى: ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+    });
+  }, [toast]);
+
   const filteredShips = Array.from(ships.values()).filter(ship => {
     if (filters.types.length > 0 && ship.type && !filters.types.includes(ship.type)) {
       return false;
@@ -130,6 +146,14 @@ const Maritime = () => {
       {/* Header */}
       <div className="bg-background border-b p-2 sm:p-4 flex items-center justify-between gap-2 sm:gap-4 z-10">
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <ShipIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           <h1 className="text-lg sm:text-2xl font-bold">خريطة حركة السفن البحرية</h1>
         </div>
@@ -170,6 +194,8 @@ const Maritime = () => {
               <OperationZoneEditor 
                 zone={operationZone} 
                 onZoneChange={setOperationZone}
+                clickToSetZone={clickToSetZone}
+                onClickToSetZoneChange={setClickToSetZone}
               />
               <ZoneTracker
                 tracking={tracking}
@@ -224,6 +250,7 @@ const Maritime = () => {
             zoom={7}
             className="w-full h-full"
             zoomControl={true}
+            style={{ cursor: clickToSetZone ? 'crosshair' : 'grab' }}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -243,14 +270,15 @@ const Maritime = () => {
                 center={operationZone.center as LatLngExpression}
                 radius={operationZone.radius}
                 pathOptions={{
-                  color: tracking ? '#ef4444' : '#3b82f6',
-                  fillColor: tracking ? '#ef4444' : '#3b82f6',
+                  color: tracking ? '#ef4444' : clickToSetZone ? '#10b981' : '#3b82f6',
+                  fillColor: tracking ? '#ef4444' : clickToSetZone ? '#10b981' : '#3b82f6',
                   fillOpacity: 0.1,
                   weight: 2,
                   className: tracking ? 'animate-pulse' : ''
                 }}
               />
             ) : null}
+            <MapClickHandler enabled={clickToSetZone} onLocationSelect={handleMapClick} />
           </MapContainer>
         </div>
       </div>

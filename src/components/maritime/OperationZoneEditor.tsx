@@ -4,14 +4,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { OperationZone } from '@/pages/Maritime';
-import { MapPin, Circle as CircleIcon } from 'lucide-react';
+import { MapPin, Circle as CircleIcon, MousePointer2 } from 'lucide-react';
 
 interface OperationZoneEditorProps {
   zone: OperationZone;
   onZoneChange: (zone: OperationZone) => void;
+  clickToSetZone?: boolean;
+  onClickToSetZoneChange?: (value: boolean) => void;
 }
 
-const OperationZoneEditor: React.FC<OperationZoneEditorProps> = ({ zone, onZoneChange }) => {
+const OperationZoneEditor: React.FC<OperationZoneEditorProps> = ({ 
+  zone, 
+  onZoneChange,
+  clickToSetZone = false,
+  onClickToSetZoneChange
+}) => {
   return (
     <div className="space-y-4">
       <h3 className="font-semibold mb-3">منطقة التشغيل</h3>
@@ -71,7 +78,17 @@ const OperationZoneEditor: React.FC<OperationZoneEditorProps> = ({ zone, onZoneC
           </p>
         </div>
 
-        <div className="pt-2 border-t">
+        <div className="pt-2 border-t space-y-2">
+          {onClickToSetZoneChange && (
+            <Button
+              variant={clickToSetZone ? "default" : "outline"}
+              className="w-full"
+              onClick={() => onClickToSetZoneChange(!clickToSetZone)}
+            >
+              <MousePointer2 className="h-4 w-4 ml-2" />
+              {clickToSetZone ? "إلغاء التحديد من الخريطة" : "تحديد من الخريطة"}
+            </Button>
+          )}
           <Button
             variant="outline"
             className="w-full"
@@ -86,7 +103,7 @@ const OperationZoneEditor: React.FC<OperationZoneEditorProps> = ({ zone, onZoneC
       </Card>
 
       <div className="text-xs text-muted-foreground space-y-1 bg-muted p-3 rounded-md">
-        <p>💡 نصيحة: يمكنك تعديل المنطقة يدوياً بإدخال الإحداثيات أو سحب الدائرة على الخريطة.</p>
+        <p>💡 نصيحة: يمكنك تعديل المنطقة يدوياً بإدخال الإحداثيات أو الضغط على "تحديد من الخريطة" ثم النقر على الموقع المطلوب.</p>
       </div>
     </div>
   );
