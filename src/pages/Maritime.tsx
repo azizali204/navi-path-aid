@@ -132,12 +132,20 @@ const Maritime = () => {
   }, [toast]);
 
   const filteredShips = Array.from(ships.values()).filter(ship => {
-    if (filters.types.length > 0 && ship.type && !filters.types.includes(ship.type)) {
+    // فلترة حسب النوع - إذا كان هناك فلاتر محددة
+    if (filters.types.length > 0) {
+      // إذا لم يكن للسفينة نوع، لا تعرضها عند وجود فلتر
+      if (!ship.type) return false;
+      // إذا كان نوع السفينة ليس ضمن الفلاتر المحددة، لا تعرضها
+      if (!filters.types.includes(ship.type)) return false;
+    }
+    
+    // فلترة حسب السرعة
+    const speed = ship.sog || 0;
+    if (speed < filters.minSpeed || speed > filters.maxSpeed) {
       return false;
     }
-    if (ship.sog < filters.minSpeed || ship.sog > filters.maxSpeed) {
-      return false;
-    }
+    
     return true;
   });
 
