@@ -134,18 +134,19 @@ const Maritime = () => {
   const filteredShips = Array.from(ships.values()).filter(ship => {
     // فلترة حسب النوع - إذا كان هناك فلاتر محددة
     if (filters.types.length > 0) {
-      // إذا لم يكن للسفينة نوع، لا تعرضها عند وجود فلتر
-      if (!ship.type) return false;
-      // إذا كان نوع السفينة ليس ضمن الفلاتر المحددة، لا تعرضها
-      if (!filters.types.includes(ship.type)) return false;
+      // تحويل نوع السفينة إلى رقم والتأكد من صلاحيته
+      const typeValue = ship.type !== undefined && ship.type !== null ? Number(ship.type) : undefined;
+      if (typeValue === undefined || Number.isNaN(typeValue) || !filters.types.includes(typeValue)) {
+        return false;
+      }
     }
-    
+
     // فلترة حسب السرعة
-    const speed = ship.sog || 0;
+    const speed = typeof ship.sog === 'number' ? ship.sog : Number(ship.sog) || 0;
     if (speed < filters.minSpeed || speed > filters.maxSpeed) {
       return false;
     }
-    
+
     return true;
   });
 

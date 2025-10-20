@@ -77,7 +77,11 @@ const MaritimeFilters: React.FC<MaritimeFiltersProps> = ({ filters, onFiltersCha
             </Label>
             <Slider
               value={[filters.minSpeed]}
-              onValueChange={(value) => onFiltersChange({ ...filters, minSpeed: value[0] })}
+              onValueChange={(value) => {
+                const newMin = value[0];
+                const newMax = Math.max(newMin, filters.maxSpeed);
+                onFiltersChange({ ...filters, minSpeed: newMin, maxSpeed: newMax });
+              }}
               max={50}
               step={1}
               className="mt-2"
@@ -89,7 +93,11 @@ const MaritimeFilters: React.FC<MaritimeFiltersProps> = ({ filters, onFiltersCha
             </Label>
             <Slider
               value={[filters.maxSpeed]}
-              onValueChange={(value) => onFiltersChange({ ...filters, maxSpeed: value[0] })}
+              onValueChange={(value) => {
+                const newMax = value[0];
+                const newMin = Math.min(filters.minSpeed, newMax);
+                onFiltersChange({ ...filters, minSpeed: newMin, maxSpeed: newMax });
+              }}
               max={50}
               step={1}
               className="mt-2"
