@@ -86,15 +86,6 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       return;
     }
 
-    if (markers.length === 0) {
-      toast({
-        title: "تنبيه",
-        description: "لا توجد نقاط للتصدير",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // حفظ العرض الحالي خارج try للوصول إليه في catch
     const originalCenter = map.getCenter();
     const originalZoom = map.getZoom();
@@ -104,7 +95,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: "يتم إنشاء صورة خريطة العالم مع جميع الرموز",
+        description: markers.length > 0 ? "يتم إنشاء صورة خريطة العالم مع جميع الرموز" : "يتم إنشاء صورة خريطة العالم",
       });
 
       // ضبط الخريطة لعرض العالم كاملاً 2D
@@ -148,55 +139,58 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       // 1. رسم الخريطة الأساسية أولاً بحجم مكبر
       ctx.drawImage(baseCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-      // حساب النسبة بين CSS pixels و canvas pixels مع معامل التكبير
-      const cssWidth = container.clientWidth || baseCanvas.width;
-      const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
+      // 2. رسم الرموز إذا كانت موجودة
+      if (markers.length > 0) {
+        // حساب النسبة بين CSS pixels و canvas pixels مع معامل التكبير
+        const cssWidth = container.clientWidth || baseCanvas.width;
+        const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
-      // 2. تحميل ورسم الأيقونات فوق الخريطة
-      const iconSizeCss = 32;
-      const iconSize = iconSizeCss * ratio;
-      const ringRadius = 20 * ratio;
-      const ringFillRadius = 18 * ratio;
+        // تحميل ورسم الأيقونات فوق الخريطة
+        const iconSizeCss = 32;
+        const iconSize = iconSizeCss * ratio;
+        const ringRadius = 20 * ratio;
+        const ringFillRadius = 18 * ratio;
 
-      for (const marker of markers) {
-        try {
-          // حساب موقع الأيقونة على الخريطة
-          const point = map.project({ lng: marker.lng, lat: marker.lat });
-          const x = point.x * ratio;
-          const y = point.y * ratio;
+        for (const marker of markers) {
+          try {
+            // حساب موقع الأيقونة على الخريطة
+            const point = map.project({ lng: marker.lng, lat: marker.lat });
+            const x = point.x * ratio;
+            const y = point.y * ratio;
 
-          // تخطي الأيقونات خارج حدود الخريطة
-          if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
-            continue;
+            // تخطي الأيقونات خارج حدود الخريطة
+            if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
+              continue;
+            }
+
+            // رسم خلفية دائرية خفيفة
+            ctx.beginPath();
+            ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+            ctx.fill();
+
+            // رسم إطار دائري حسب مستوى الأهمية
+            ctx.beginPath();
+            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3 * ratio;
+            ctx.strokeStyle = getSeverityColor(marker.severity);
+            ctx.shadowBlur = 10 * ratio;
+            ctx.shadowColor = getSeverityColor(marker.severity);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // رسم الأيقونة
+            const iconImage = await getIconForMarker(marker);
+            ctx.drawImage(
+              iconImage,
+              x - iconSize / 2,
+              y - iconSize / 2,
+              iconSize,
+              iconSize
+            );
+          } catch (error) {
+            console.error('خطأ في رسم الأيقونة:', marker.id, error);
           }
-
-          // رسم خلفية دائرية خفيفة
-          ctx.beginPath();
-          ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
-          ctx.fill();
-
-          // رسم إطار دائري حسب مستوى الأهمية
-          ctx.beginPath();
-          ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-          ctx.lineWidth = 3 * ratio;
-          ctx.strokeStyle = getSeverityColor(marker.severity);
-          ctx.shadowBlur = 10 * ratio;
-          ctx.shadowColor = getSeverityColor(marker.severity);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-
-          // رسم الأيقونة
-          const iconImage = await getIconForMarker(marker);
-          ctx.drawImage(
-            iconImage,
-            x - iconSize / 2,
-            y - iconSize / 2,
-            iconSize,
-            iconSize
-          );
-        } catch (error) {
-          console.error('خطأ في رسم الأيقونة:', marker.id, error);
         }
       }
 
@@ -237,7 +231,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
         toast({
           title: "تم التصدير ✓",
-          description: `تم حفظ خريطة العالم مع ${markers.length} رمز`,
+          description: markers.length > 0 ? `تم حفظ خريطة العالم مع ${markers.length} رمز` : "تم حفظ خريطة العالم",
         });
       }, 'image/png', 0.95);
 
@@ -517,7 +511,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         size="sm"
         className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportPNG}
-        disabled={!map || markers.length === 0}
+        disabled={!map}
       >
         <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         PNG
