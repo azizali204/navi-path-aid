@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes, Camera, Video } from "lucide-react";
+import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes, Camera, Video, Presentation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef } from "react";
 import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
 import mapboxgl from "mapbox-gl";
+import pptxgen from "pptxgenjs";
 
 interface MarkerData {
   id: number;
@@ -692,6 +693,248 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     }
   };
 
+  const exportPPTX = async () => {
+    if (!map || markers.length === 0) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "جاري التصدير...",
+        description: "يتم إنشاء عرض PowerPoint",
+      });
+
+      // إنشاء عرض تقديمي جديد
+      const pptx = new pptxgen();
+      pptx.layout = "LAYOUT_16x9";
+      pptx.author = "النظام البحري العسكري";
+      pptx.title = "تقرير الخريطة العسكرية";
+
+      // الشريحة 1: العنوان
+      const slideTitle = pptx.addSlide();
+      slideTitle.background = { color: "1e3a8a" };
+      slideTitle.addText("تقرير الخريطة العسكرية", {
+        x: 1,
+        y: 2.5,
+        w: 8,
+        h: 1,
+        fontSize: 44,
+        bold: true,
+        color: "FFFFFF",
+        align: "center",
+      });
+      slideTitle.addText(`عدد الرموز: ${markers.length}`, {
+        x: 1,
+        y: 3.7,
+        w: 8,
+        h: 0.5,
+        fontSize: 24,
+        color: "cbd5e1",
+        align: "center",
+      });
+      slideTitle.addText(`تاريخ التصدير: ${new Date().toLocaleDateString("ar-SA")}`, {
+        x: 1,
+        y: 4.3,
+        w: 8,
+        h: 0.5,
+        fontSize: 18,
+        color: "94a3b8",
+        align: "center",
+      });
+
+      // الشريحة 2: صورة الخريطة
+      // حفظ العرض الحالي
+      const originalCenter = map.getCenter();
+      const originalZoom = map.getZoom();
+      const originalPitch = map.getPitch();
+      const originalBearing = map.getBearing();
+
+      // حساب الحدود لجميع النقاط
+      const bounds = new mapboxgl.LngLatBounds();
+      markers.forEach(m => bounds.extend([m.lng, m.lat]));
+      
+      // ضبط الخريطة لتشمل جميع الرموز
+      map.fitBounds(bounds, { 
+        padding: { top: 100, bottom: 100, left: 100, right: 100 },
+        pitch: 0,
+        bearing: 0,
+        maxZoom: 8,
+        animate: false
+      });
+
+      // انتظار استقرار الخريطة
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          setTimeout(() => resolve(), 800);
+        });
+      });
+
+      // التقاط صورة الخريطة
+      const baseCanvas: HTMLCanvasElement = map.getCanvas();
+      const mapImageData = baseCanvas.toDataURL('image/png', 0.9);
+
+      const slideMap = pptx.addSlide();
+      slideMap.addText("الخريطة العسكرية", {
+        x: 0.5,
+        y: 0.3,
+        w: 9,
+        h: 0.5,
+        fontSize: 28,
+        bold: true,
+        color: "1e3a8a",
+        align: "center",
+      });
+      slideMap.addImage({
+        data: mapImageData,
+        x: 0.5,
+        y: 1,
+        w: 9,
+        h: 4.5,
+      });
+
+      // إعادة العرض الأصلي
+      map.flyTo({
+        center: originalCenter,
+        zoom: originalZoom,
+        pitch: originalPitch,
+        bearing: originalBearing,
+        animate: false
+      });
+
+      // الشريحة 3: إحصائيات
+      const slideStats = pptx.addSlide();
+      slideStats.addText("الإحصائيات", {
+        x: 0.5,
+        y: 0.3,
+        w: 9,
+        h: 0.5,
+        fontSize: 28,
+        bold: true,
+        color: "1e3a8a",
+      });
+
+      // حساب الإحصائيات
+      const typeCount: Record<string, number> = {};
+      const severityCount: Record<string, number> = {};
+      markers.forEach(m => {
+        typeCount[m.type] = (typeCount[m.type] || 0) + 1;
+        if (m.severity) {
+          severityCount[m.severity] = (severityCount[m.severity] || 0) + 1;
+        }
+      });
+
+      const statsRows = [
+        [
+          { text: "النوع", options: { bold: true, color: "1e3a8a", fontSize: 16 } },
+          { text: "العدد", options: { bold: true, color: "1e3a8a", fontSize: 16 } },
+        ],
+        ...Object.entries(typeCount).map(([type, count]) => [
+          { text: type, options: { fontSize: 14 } },
+          { text: count.toString(), options: { fontSize: 14 } },
+        ]),
+      ];
+
+      slideStats.addTable(statsRows, {
+        x: 1,
+        y: 1.2,
+        w: 4,
+        h: 3,
+        border: { pt: 1, color: "cbd5e1" },
+        fill: { color: "f8fafc" },
+      });
+
+      const severityRows = [
+        [
+          { text: "مستوى الأهمية", options: { bold: true, color: "1e3a8a", fontSize: 16 } },
+          { text: "العدد", options: { bold: true, color: "1e3a8a", fontSize: 16 } },
+        ],
+        ...Object.entries(severityCount).map(([severity, count]) => [
+          { text: severity === "high" ? "عالي" : severity === "medium" ? "متوسط" : "منخفض", options: { fontSize: 14 } },
+          { text: count.toString(), options: { fontSize: 14 } },
+        ]),
+      ];
+
+      slideStats.addTable(severityRows, {
+        x: 5.5,
+        y: 1.2,
+        w: 4,
+        h: 3,
+        border: { pt: 1, color: "cbd5e1" },
+        fill: { color: "f8fafc" },
+      });
+
+      // الشريحة 4: جدول البيانات (أول 50 نقطة)
+      const slideData = pptx.addSlide();
+      slideData.addText("تفاصيل الرموز", {
+        x: 0.5,
+        y: 0.3,
+        w: 9,
+        h: 0.5,
+        fontSize: 28,
+        bold: true,
+        color: "1e3a8a",
+      });
+
+      const dataRows = [
+        [
+          { text: "الاسم", options: { bold: true, color: "1e3a8a", fontSize: 12 } },
+          { text: "النوع", options: { bold: true, color: "1e3a8a", fontSize: 12 } },
+          { text: "الوصف", options: { bold: true, color: "1e3a8a", fontSize: 12 } },
+          { text: "الموقع", options: { bold: true, color: "1e3a8a", fontSize: 12 } },
+        ],
+        ...markers.slice(0, 50).map(m => [
+          { text: m.name_ar, options: { fontSize: 10 } },
+          { text: m.type, options: { fontSize: 10 } },
+          { text: m.description_ar.substring(0, 50), options: { fontSize: 10 } },
+          { text: `${m.lat.toFixed(2)}, ${m.lng.toFixed(2)}`, options: { fontSize: 10 } },
+        ]),
+      ];
+
+      slideData.addTable(dataRows, {
+        x: 0.5,
+        y: 1,
+        w: 9,
+        h: 4.3,
+        border: { pt: 1, color: "cbd5e1" },
+        fill: { color: "ffffff" },
+        fontSize: 10,
+      });
+
+      if (markers.length > 50) {
+        slideData.addText(`عرض أول 50 رمز من إجمالي ${markers.length}`, {
+          x: 0.5,
+          y: 5.4,
+          w: 9,
+          h: 0.3,
+          fontSize: 12,
+          color: "64748b",
+          align: "center",
+          italic: true,
+        });
+      }
+
+      // حفظ الملف
+      await pptx.writeFile({ fileName: `military-map-${Date.now()}.pptx` });
+
+      toast({
+        title: "تم التصدير ✓",
+        description: `تم حفظ العرض التقديمي مع ${markers.length} رمز`,
+      });
+    } catch (error) {
+      console.error("خطأ في تصدير PPTX:", error);
+      toast({
+        title: "خطأ",
+        description: "فشل تصدير العرض التقديمي",
+        variant: "destructive",
+      });
+    }
+  };
+
   const startRecording = () => {
     if (!map) {
       toast({
@@ -815,6 +1058,18 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         <FileCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         <span className="hidden sm:inline">HTML تفاعلي (بوربوينت)</span>
         <span className="sm:hidden">HTML</span>
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+        onClick={exportPPTX}
+        disabled={!map || markers.length === 0}
+      >
+        <Presentation className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <span className="hidden sm:inline">عرض PowerPoint</span>
+        <span className="sm:hidden">PPTX</span>
       </Button>
 
       <Button
