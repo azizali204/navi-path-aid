@@ -104,27 +104,23 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: "يتم إنشاء صورة عالية الجودة تشمل جميع الرموز",
+        description: "يتم إنشاء صورة خريطة العالم مع جميع الرموز",
       });
 
-      // حساب الحدود لجميع النقاط
-      const bounds = new mapboxgl.LngLatBounds();
-      markers.forEach(m => bounds.extend([m.lng, m.lat]));
-      
-      // ضبط الخريطة لتشمل جميع الرموز مع هامش مناسب
-      map.fitBounds(bounds, { 
-        padding: { top: 80, bottom: 80, left: 80, right: 80 },
-        pitch: 0,
-        bearing: 0,
-        maxZoom: 16,
-        animate: false,
-        duration: 0
+      // ضبط الخريطة لعرض العالم كاملاً 2D
+      map.flyTo({
+        center: [0, 20], // مركز العالم
+        zoom: 1.5, // زوم لعرض العالم كاملاً
+        pitch: 0, // بدون ميل (2D)
+        bearing: 0, // بدون دوران
+        duration: 0,
+        animate: false
       });
 
-      // انتظار استقرار الخريطة بعد التكبير
+      // انتظار استقرار الخريطة
       await new Promise<void>((resolve) => {
         map.once('idle', () => {
-          setTimeout(() => resolve(), 800);
+          setTimeout(() => resolve(), 1000); // وقت أطول للتأكد من تحميل خريطة العالم
         });
       });
 
@@ -226,7 +222,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `military-map-${Date.now()}.png`;
+        a.download = `world-map-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
 
@@ -241,7 +237,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
         toast({
           title: "تم التصدير ✓",
-          description: `تم حفظ صورة عالية الجودة مع ${markers.length} رمز`,
+          description: `تم حفظ خريطة العالم مع ${markers.length} رمز`,
         });
       }, 'image/png', 0.95);
 
