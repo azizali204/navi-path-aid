@@ -76,131 +76,197 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
 
 
-  const exportSVG = () => {
-    const width = 1920;
-    const height = 1080;
-    const padding = 100;
-
-    // حساب الحدود للنقاط
-    let minLat = Infinity, maxLat = -Infinity;
-    let minLng = Infinity, maxLng = -Infinity;
-
-    markers.forEach(m => {
-      minLat = Math.min(minLat, m.lat);
-      maxLat = Math.max(maxLat, m.lat);
-      minLng = Math.min(minLng, m.lng);
-      maxLng = Math.max(maxLng, m.lng);
-    });
-
-    // إضافة هامش
-    const latRange = maxLat - minLat || 1;
-    const lngRange = maxLng - minLng || 1;
-    minLat -= latRange * 0.1;
-    maxLat += latRange * 0.1;
-    minLng -= lngRange * 0.1;
-    maxLng += lngRange * 0.1;
-
-    // دالة لتحويل الإحداثيات إلى نقاط SVG
-    const latLngToSVG = (lat: number, lng: number) => {
-      const x = padding + ((lng - minLng) / (maxLng - minLng)) * (width - 2 * padding);
-      const y = height - padding - ((lat - minLat) / (maxLat - minLat)) * (height - 2 * padding);
-      return { x, y };
-    };
-
-    const severityColors: { [key: string]: string } = {
-      high: '#ef4444',
-      medium: '#f59e0b',
-      low: '#10b981'
-    };
-
-    // إنشاء SVG
-    let svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <defs>
-    <style>
-      .marker-text { font-family: Arial, sans-serif; font-size: 14px; fill: white; }
-      .title-text { font-family: Arial, sans-serif; font-size: 24px; fill: white; font-weight: bold; }
-      .coord-text { font-family: monospace; font-size: 10px; fill: #999; }
-    </style>
-  </defs>
-  
-  <!-- خلفية -->
-  <rect width="${width}" height="${height}" fill="#0a1929"/>
-  
-  <!-- شبكة الإحداثيات -->
-  <g opacity="0.2">`;
-
-    // خطوط الشبكة
-    for (let i = 0; i <= 10; i++) {
-      const x = padding + (i / 10) * (width - 2 * padding);
-      const y = padding + (i / 10) * (height - 2 * padding);
-      svg += `
-    <line x1="${x}" y1="${padding}" x2="${x}" y2="${height - padding}" stroke="#444" stroke-width="1"/>
-    <line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="#444" stroke-width="1"/>`;
+  const exportPNG = async () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
     }
 
-    svg += `
-  </g>
-  
-  <!-- العنوان -->
-  <text x="${width / 2}" y="50" text-anchor="middle" class="title-text">خريطة بحرية عسكرية</text>
-  
-  <!-- النقاط -->
-  <g>`;
+    if (markers.length === 0) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد نقاط للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    markers.forEach(marker => {
-      const { x, y } = latLngToSVG(marker.lat, marker.lng);
-      const color = severityColors[marker.severity || 'low'];
+    // حفظ العرض الحالي خارج try للوصول إليه في catch
+    const originalCenter = map.getCenter();
+    const originalZoom = map.getZoom();
+    const originalPitch = map.getPitch();
+    const originalBearing = map.getBearing();
+
+    try {
+      toast({
+        title: "جاري التصدير...",
+        description: "يتم إنشاء صورة عالية الجودة تشمل جميع الرموز",
+      });
+
+      // حساب الحدود لجميع النقاط
+      const bounds = new mapboxgl.LngLatBounds();
+      markers.forEach(m => bounds.extend([m.lng, m.lat]));
       
-      svg += `
-    <g>
-      <!-- دائرة النقطة -->
-      <circle cx="${x}" cy="${y}" r="8" fill="${color}" opacity="0.3"/>
-      <circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="white" stroke-width="2"/>
+      // ضبط الخريطة لتشمل جميع الرموز مع هامش مناسب
+      map.fitBounds(bounds, { 
+        padding: { top: 80, bottom: 80, left: 80, right: 80 },
+        pitch: 0,
+        bearing: 0,
+        maxZoom: 16,
+        animate: false,
+        duration: 0
+      });
+
+      // انتظار استقرار الخريطة بعد التكبير
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          setTimeout(() => resolve(), 800);
+        });
+      });
+
+      // الحصول على canvas الخريطة الأساسية
+      const baseCanvas: HTMLCanvasElement = map.getCanvas();
+      const container: HTMLDivElement = map.getContainer();
       
-      <!-- اسم النقطة -->
-      <text x="${x}" y="${y - 15}" text-anchor="middle" class="marker-text">${marker.name_ar}</text>
+      // معامل تكبير لزيادة جودة الصورة (2x للجودة العالية)
+      const scaleFactor = 2;
       
-      <!-- الإحداثيات -->
-      <text x="${x}" y="${y + 25}" text-anchor="middle" class="coord-text">${marker.lat.toFixed(4)}, ${marker.lng.toFixed(4)}</text>
-    </g>`;
-    });
+      // إنشاء canvas جديد بحجم أكبر للجودة العالية
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = baseCanvas.width * scaleFactor;
+      outputCanvas.height = baseCanvas.height * scaleFactor;
+      const ctx = outputCanvas.getContext('2d', { alpha: false });
+      
+      if (!ctx) {
+        throw new Error('فشل في إنشاء السياق');
+      }
 
-    svg += `
-  </g>
-  
-  <!-- مفتاح الألوان -->
-  <g transform="translate(${width - 200}, ${height - 150})">
-    <rect width="180" height="120" fill="rgba(0,0,0,0.8)" rx="8"/>
-    <text x="90" y="25" text-anchor="middle" class="marker-text" font-weight="bold">مستوى الأهمية</text>
-    
-    <circle cx="30" cy="50" r="6" fill="#10b981"/>
-    <text x="50" y="55" class="marker-text">منخفض</text>
-    
-    <circle cx="30" cy="75" r="6" fill="#f59e0b"/>
-    <text x="50" y="80" class="marker-text">متوسط</text>
-    
-    <circle cx="30" cy="100" r="6" fill="#ef4444"/>
-    <text x="50" y="105" class="marker-text">عالي</text>
-  </g>
-  
-  <!-- تفاصيل الخريطة -->
-  <text x="20" y="${height - 20}" class="coord-text">تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</text>
-  <text x="${width - 20}" y="${height - 20}" text-anchor="end" class="coord-text">عدد النقاط: ${markers.length}</text>
-</svg>`;
+      // تحسين جودة الرسم
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 1. رسم الخريطة الأساسية أولاً بحجم مكبر
+      ctx.drawImage(baseCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `naval-map-${Date.now()}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
+      // حساب النسبة بين CSS pixels و canvas pixels مع معامل التكبير
+      const cssWidth = container.clientWidth || baseCanvas.width;
+      const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
-    toast({
-      title: "تم التصدير",
-      description: "تم تصدير الخريطة بصيغة SVG",
-    });
+      // 2. تحميل ورسم الأيقونات فوق الخريطة
+      const iconSizeCss = 32;
+      const iconSize = iconSizeCss * ratio;
+      const ringRadius = 20 * ratio;
+      const ringFillRadius = 18 * ratio;
+
+      for (const marker of markers) {
+        try {
+          // حساب موقع الأيقونة على الخريطة
+          const point = map.project({ lng: marker.lng, lat: marker.lat });
+          const x = point.x * ratio;
+          const y = point.y * ratio;
+
+          // تخطي الأيقونات خارج حدود الخريطة
+          if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
+            continue;
+          }
+
+          // رسم خلفية دائرية خفيفة
+          ctx.beginPath();
+          ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+          ctx.fill();
+
+          // رسم إطار دائري حسب مستوى الأهمية
+          ctx.beginPath();
+          ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+          ctx.lineWidth = 3 * ratio;
+          ctx.strokeStyle = getSeverityColor(marker.severity);
+          ctx.shadowBlur = 10 * ratio;
+          ctx.shadowColor = getSeverityColor(marker.severity);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // رسم الأيقونة
+          const iconImage = await getIconForMarker(marker);
+          ctx.drawImage(
+            iconImage,
+            x - iconSize / 2,
+            y - iconSize / 2,
+            iconSize,
+            iconSize
+          );
+        } catch (error) {
+          console.error('خطأ في رسم الأيقونة:', marker.id, error);
+        }
+      }
+
+      // 3. تصدير الصورة النهائية
+      outputCanvas.toBlob((blob) => {
+        if (!blob) {
+          toast({
+            title: "خطأ",
+            description: "فشل في إنشاء الصورة",
+            variant: "destructive",
+          });
+          // إعادة العرض الأصلي
+          map.flyTo({
+            center: originalCenter,
+            zoom: originalZoom,
+            pitch: originalPitch,
+            bearing: originalBearing,
+            animate: false
+          });
+          return;
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `military-map-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // إعادة العرض الأصلي
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          duration: 1000
+        });
+
+        toast({
+          title: "تم التصدير ✓",
+          description: `تم حفظ صورة عالية الجودة مع ${markers.length} رمز`,
+        });
+      }, 'image/png', 0.95);
+
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      
+      // إعادة العرض الأصلي في حالة الخطأ
+      try {
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          animate: false
+        });
+      } catch (e) {
+        console.error('خطأ في إعادة العرض:', e);
+      }
+      
+      toast({
+        title: "خطأ",
+        description: "فشل تصدير الصورة",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -454,11 +520,11 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         variant="outline"
         size="sm"
         className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
-        onClick={exportSVG}
-        disabled={markers.length === 0}
+        onClick={exportPNG}
+        disabled={!map || markers.length === 0}
       >
         <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        SVG
+        PNG
       </Button>
 
       <Button
