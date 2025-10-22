@@ -250,6 +250,30 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       });
 
       map.current.on('load', () => {
+        // إضافة طبقة OpenSeaMap للخرائط البحرية (تشبه C-MAP)
+        try {
+          map.current?.addSource('openseamap', {
+            type: 'raster',
+            tiles: [
+              'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: 'Map data: © <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
+          });
+
+          // إضافة طبقة الخريطة البحرية
+          map.current?.addLayer({
+            id: 'openseamap-layer',
+            type: 'raster',
+            source: 'openseamap',
+            paint: {
+              'raster-opacity': 0.75 // شفافية 75% لإظهار الخريطة الأساسية
+            }
+          });
+        } catch (error) {
+          console.error('خطأ في إضافة طبقة OpenSeaMap:', error);
+        }
+
         setIsMapReady(true);
         renderMarkers([], customMarkers);
       });
@@ -485,8 +509,33 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       map.current.setStyle(style);
       setMapStyle(style);
       
-      // إعادة رسم النقاط بعد تحميل النمط الجديد
+      // إعادة رسم النقاط وإضافة طبقة OpenSeaMap بعد تحميل النمط الجديد
       map.current.once('style.load', () => {
+        // إعادة إضافة طبقة OpenSeaMap البحرية
+        try {
+          if (!map.current?.getSource('openseamap')) {
+            map.current?.addSource('openseamap', {
+              type: 'raster',
+              tiles: [
+                'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
+              ],
+              tileSize: 256,
+              attribution: 'Map data: © <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
+            });
+
+            map.current?.addLayer({
+              id: 'openseamap-layer',
+              type: 'raster',
+              source: 'openseamap',
+              paint: {
+                'raster-opacity': 0.75
+              }
+            });
+          }
+        } catch (error) {
+          console.error('خطأ في إضافة طبقة OpenSeaMap:', error);
+        }
+
         renderMarkers([], customMarkers);
       });
       
