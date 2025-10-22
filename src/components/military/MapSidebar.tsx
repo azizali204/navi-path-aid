@@ -24,6 +24,7 @@ import {
 import { IconLabelsAr, CategoryLabelsAr, IconCategories } from "./MilitarySymbolIcons";
 import { MarkersTable } from "./MarkersTable";
 import { ExportPanel } from "./ExportPanel";
+import { NewsEventsPanel } from "@/components/maritime/NewsEventsPanel";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -51,6 +52,7 @@ interface MapSidebarProps {
   searchTerm: string;
   onSearch: (term: string) => void;
   map: any;
+  onNewsEventsFound?: (events: any[]) => void;
 }
 
 export const MapSidebar = ({
@@ -65,6 +67,7 @@ export const MapSidebar = ({
   searchTerm,
   onSearch,
   map,
+  onNewsEventsFound,
 }: MapSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -249,6 +252,19 @@ export const MapSidebar = ({
           </div>
 
           <Separator />
+
+          {/* البحث عن الأحداث */}
+          {onNewsEventsFound && (
+            <>
+              <div>
+                <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3">
+                  البحث عن الأحداث
+                </h3>
+                <NewsEventsPanel onEventsFound={onNewsEventsFound} />
+              </div>
+              <Separator />
+            </>
+          )}
 
           {/* التصدير */}
           <div>

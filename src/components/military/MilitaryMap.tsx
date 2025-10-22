@@ -4,6 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { MilitarySymbolIcons } from "./MilitarySymbolIcons";
 import { MapSidebar } from "./MapSidebar";
 import { AddMarkerDialog } from "./AddMarkerDialog";
+import { NewsEventMarkersMapbox } from "./NewsEventMarkersMapbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -67,6 +68,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
   const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/dark-v11');
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
+  const [newsEvents, setNewsEvents] = useState<any[]>([]);
   const { toast } = useToast();
 
   // تحميل النقاط المخصصة من LocalStorage
@@ -564,6 +566,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           searchTerm={searchTerm}
           onSearch={handleSearch}
           map={map.current}
+          onNewsEventsFound={setNewsEvents}
         />
       </div>
 
@@ -581,12 +584,14 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           searchTerm={searchTerm}
           onSearch={handleSearch}
           map={map.current}
+          onNewsEventsFound={setNewsEvents}
         />
       </div>
 
       {/* الخريطة */}
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
+        <NewsEventMarkersMapbox events={newsEvents} map={map.current} />
 
       {/* زر إظهار/إخفاء القائمة الجانبية - مخفي على الموبايل */}
       <button
