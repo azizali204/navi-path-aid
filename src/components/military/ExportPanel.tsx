@@ -3,6 +3,7 @@ import { Download, FileJson, FileSpreadsheet, FileCode, FileImage, Shapes, Camer
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef } from "react";
 import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
+import mapboxgl from "mapbox-gl";
 
 interface MarkerData {
   id: number;
@@ -509,19 +510,45 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       return;
     }
 
+    if (markers.length === 0) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد نقاط للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // حفظ العرض الحالي خارج try للوصول إليه في catch
+    const originalCenter = map.getCenter();
+    const originalZoom = map.getZoom();
+    const originalPitch = map.getPitch();
+    const originalBearing = map.getBearing();
+
     try {
       toast({
         title: "جاري التصدير...",
-        description: "يتم التقاط صورة الخريطة مع الأيقونات",
+        description: "يتم إنشاء خريطة العالم كاملة مع جميع الرموز",
       });
 
-      // انتظر استقرار الخريطة
+      // حساب الحدود لجميع النقاط
+      const bounds = new mapboxgl.LngLatBounds();
+      markers.forEach(m => bounds.extend([m.lng, m.lat]));
+      
+      // تكبير الخريطة لتشمل جميع النقاط مع هامش
+      map.fitBounds(bounds, { 
+        padding: 100,
+        pitch: 0,
+        bearing: 0,
+        maxZoom: 15,
+        animate: false
+      });
+
+      // انتظار استقرار الخريطة بعد التكبير
       await new Promise<void>((resolve) => {
-        if (map.loaded() && !map.isMoving()) {
-          resolve();
-        } else {
-          map.once('idle', () => resolve());
-        }
+        map.once('idle', () => {
+          setTimeout(() => resolve(), 500); // انتظار إضافي للتأكد من رسم جميع الرموز
+        });
       });
 
       // الحصول على canvas الخريطة الأساسية
@@ -601,24 +628,55 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
             description: "فشل في إنشاء الصورة",
             variant: "destructive",
           });
+          // إعادة العرض الأصلي
+          map.flyTo({
+            center: originalCenter,
+            zoom: originalZoom,
+            pitch: originalPitch,
+            bearing: originalBearing,
+            animate: false
+          });
           return;
         }
         
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `naval-map-complete-${Date.now()}.png`;
+        a.download = `naval-map-world-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
 
+        // إعادة العرض الأصلي
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          duration: 1000
+        });
+
         toast({
           title: "تم التصدير ✓",
-          description: `تم حفظ صورة الخريطة مع ${markers.length} أيقونة`,
+          description: `تم حفظ صورة خريطة العالم مع ${markers.length} رمز`,
         });
       }, 'image/png', 1.0);
 
     } catch (error) {
       console.error('خطأ في التصدير:', error);
+      
+      // إعادة العرض الأصلي في حالة الخطأ
+      try {
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          animate: false
+        });
+      } catch (e) {
+        console.error('خطأ في إعادة العرض:', e);
+      }
+      
       toast({
         title: "خطأ",
         description: "فشل تصدير الصورة",
@@ -757,10 +815,11 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         size="sm"
         className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
         onClick={exportImage}
-        disabled={!map}
+        disabled={!map || markers.length === 0}
       >
         <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        صورة PNG
+        <span className="hidden sm:inline">صورة خريطة العالم</span>
+        <span className="sm:hidden">PNG عالمي</span>
       </Button>
 
       <Button
