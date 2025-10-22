@@ -536,13 +536,14 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       const bounds = new mapboxgl.LngLatBounds();
       markers.forEach(m => bounds.extend([m.lng, m.lat]));
       
-      // ضبط الخريطة لتشمل جميع الرموز مع هامش
+      // ضبط الخريطة لتشمل جميع الرموز مع هامش مناسب
       map.fitBounds(bounds, { 
-        padding: { top: 100, bottom: 100, left: 100, right: 100 },
+        padding: { top: 80, bottom: 80, left: 80, right: 80 },
         pitch: 0,
         bearing: 0,
-        maxZoom: 8,
-        animate: false
+        maxZoom: 16, // زيادة الزوم الأقصى لرؤية أفضل
+        animate: false,
+        duration: 0
       });
 
       // انتظار استقرار الخريطة بعد التكبير
