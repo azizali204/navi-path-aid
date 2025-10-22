@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { FileImage, Presentation, Globe } from "lucide-react";
+import { FileImage, Presentation, Globe, Box } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRef } from "react";
 import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
 import mapboxgl from "mapbox-gl";
 import pptxgen from "pptxgenjs";
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 interface MarkerData {
   id: number;
@@ -417,7 +419,135 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     }
   };
 
+  const export3DGLB = async () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    try {
+      toast({
+        title: "جاري التصدير 3D...",
+        description: "يتم إنشاء نموذج ثلاثي الأبعاد GLB",
+      });
+
+      const scene = new THREE.Scene();
+      const earthGeometry = new THREE.SphereGeometry(5, 64, 64);
+      
+      const originalProjection = map.getProjection();
+      map.setProjection('globe');
+      map.flyTo({
+        center: [0, 20],
+        zoom: 1.5,
+        pitch: 0,
+        bearing: 0,
+        duration: 0,
+        animate: false
+      });
+
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          setTimeout(() => resolve(), 1000);
+        });
+      });
+
+      const canvas = map.getCanvas();
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+
+      const earthMaterial = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.8,
+        metalness: 0.2
+      });
+
+      const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+      scene.add(earth);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 10);
+      scene.add(directionalLight);
+
+      if (markers.length > 0) {
+        for (const marker of markers) {
+          try {
+            const phi = (90 - marker.lat) * (Math.PI / 180);
+            const theta = (marker.lng + 180) * (Math.PI / 180);
+            
+            const x = -5.1 * Math.sin(phi) * Math.cos(theta);
+            const y = 5.1 * Math.cos(phi);
+            const z = 5.1 * Math.sin(phi) * Math.sin(theta);
+
+            const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const markerMaterial = new THREE.MeshStandardMaterial({
+              color: getSeverityColor(marker.severity),
+              emissive: getSeverityColor(marker.severity),
+              emissiveIntensity: 0.5
+            });
+
+            const markerMesh = new THREE.Mesh(markerGeometry, markerMaterial);
+            markerMesh.position.set(x, y, z);
+            markerMesh.name = marker.name_ar;
+            scene.add(markerMesh);
+          } catch (error) {
+            console.error('خطأ في إضافة رمز 3D:', marker.id, error);
+          }
+        }
+      }
+
+      const exporter = new GLTFExporter();
+      
+      exporter.parse(
+        scene,
+        (gltf) => {
+          const blob = new Blob([gltf as ArrayBuffer], { type: 'model/gltf-binary' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `world-map-3d-${Date.now()}.glb`;
+          a.click();
+          URL.revokeObjectURL(url);
+
+          map.setProjection(originalProjection);
+
+          toast({
+            title: "تم التصدير 3D ✓",
+            description: `تم حفظ النموذج ثلاثي الأبعاد GLB مع ${markers.length} رمز`,
+          });
+
+          scene.clear();
+          earthGeometry.dispose();
+          earthMaterial.dispose();
+          texture.dispose();
+        },
+        (error) => {
+          console.error('خطأ في تصدير GLB:', error);
+          toast({
+            title: "خطأ",
+            description: "فشل تصدير النموذج ثلاثي الأبعاد",
+            variant: "destructive",
+          });
+          map.setProjection(originalProjection);
+        },
+        { binary: true }
+      );
+
+    } catch (error) {
+      console.error('خطأ في إنشاء النموذج 3D:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل إنشاء النموذج ثلاثي الأبعاد",
+        variant: "destructive",
+      });
+    }
+  };
 
   const exportPPTX = async () => {
     if (!map || markers.length === 0) {
@@ -684,6 +814,18 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       >
         <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         PNG (3D كروي)
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+        onClick={export3DGLB}
+        disabled={!map}
+      >
+        <Box className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <span className="hidden sm:inline">نموذج 3D (GLB)</span>
+        <span className="sm:hidden">GLB</span>
       </Button>
 
       <Button
