@@ -531,16 +531,12 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         description: "يتم إنشاء خريطة العالم كاملة مع جميع الرموز",
       });
 
-      // حساب الحدود لجميع النقاط
-      const bounds = new mapboxgl.LngLatBounds();
-      markers.forEach(m => bounds.extend([m.lng, m.lat]));
-      
-      // تكبير الخريطة لتشمل جميع النقاط مع هامش
-      map.fitBounds(bounds, { 
-        padding: 100,
+      // ضبط الخريطة لعرض العالم كاملاً
+      map.flyTo({
+        center: [20, 15], // مركز العالم
+        zoom: 1.2, // مستوى تكبير لعرض العالم كاملاً
         pitch: 0,
         bearing: 0,
-        maxZoom: 15,
         animate: false
       });
 
