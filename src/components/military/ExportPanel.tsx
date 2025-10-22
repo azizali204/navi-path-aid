@@ -528,22 +528,26 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: "يتم إنشاء خريطة العالم كاملة مع جميع الرموز",
+        description: "يتم إنشاء صورة عالية الجودة تشمل جميع الرموز",
       });
 
-      // ضبط الخريطة لعرض العالم كاملاً
-      map.flyTo({
-        center: [20, 15], // مركز العالم
-        zoom: 1.2, // مستوى تكبير لعرض العالم كاملاً
+      // حساب الحدود لجميع النقاط
+      const bounds = new mapboxgl.LngLatBounds();
+      markers.forEach(m => bounds.extend([m.lng, m.lat]));
+      
+      // ضبط الخريطة لتشمل جميع الرموز مع هامش
+      map.fitBounds(bounds, { 
+        padding: { top: 100, bottom: 100, left: 100, right: 100 },
         pitch: 0,
         bearing: 0,
+        maxZoom: 8,
         animate: false
       });
 
       // انتظار استقرار الخريطة بعد التكبير
       await new Promise<void>((resolve) => {
         map.once('idle', () => {
-          setTimeout(() => resolve(), 500); // انتظار إضافي للتأكد من رسم جميع الرموز
+          setTimeout(() => resolve(), 800); // انتظار إضافي للتأكد من رسم جميع الرموز
         });
       });
 
@@ -551,22 +555,29 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       const baseCanvas: HTMLCanvasElement = map.getCanvas();
       const container: HTMLDivElement = map.getContainer();
       
-      // إنشاء canvas جديد بنفس الحجم
+      // معامل تكبير لزيادة جودة الصورة (2x للجودة العالية)
+      const scaleFactor = 2;
+      
+      // إنشاء canvas جديد بحجم أكبر للجودة العالية
       const outputCanvas = document.createElement('canvas');
-      outputCanvas.width = baseCanvas.width;
-      outputCanvas.height = baseCanvas.height;
-      const ctx = outputCanvas.getContext('2d');
+      outputCanvas.width = baseCanvas.width * scaleFactor;
+      outputCanvas.height = baseCanvas.height * scaleFactor;
+      const ctx = outputCanvas.getContext('2d', { alpha: false });
       
       if (!ctx) {
         throw new Error('فشل في إنشاء السياق');
       }
 
-      // 1. رسم الخريطة الأساسية أولاً
-      ctx.drawImage(baseCanvas, 0, 0);
+      // تحسين جودة الرسم
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 1. رسم الخريطة الأساسية أولاً بحجم مكبر
+      ctx.drawImage(baseCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-      // حساب النسبة بين CSS pixels و canvas pixels
+      // حساب النسبة بين CSS pixels و canvas pixels مع معامل التكبير
       const cssWidth = container.clientWidth || baseCanvas.width;
-      const ratio = baseCanvas.width / cssWidth;
+      const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
       // 2. تحميل ورسم الأيقونات فوق الخريطة
       const iconSizeCss = 32; // حجم الأيقونة بالبكسل
@@ -653,9 +664,9 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
         toast({
           title: "تم التصدير ✓",
-          description: `تم حفظ صورة خريطة العالم مع ${markers.length} رمز`,
+          description: `تم حفظ صورة عالية الجودة مع ${markers.length} رمز`,
         });
-      }, 'image/png', 1.0);
+      }, 'image/png', 0.95); // جودة عالية 95%
 
     } catch (error) {
       console.error('خطأ في التصدير:', error);
