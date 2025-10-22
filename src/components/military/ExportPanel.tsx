@@ -98,11 +98,13 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         description: markers.length > 0 ? "يتم إنشاء صورة خريطة العالم مع جميع الرموز" : "يتم إنشاء صورة خريطة العالم",
       });
 
-      // ضبط الخريطة لعرض العالم كاملاً 2D
+      // ضبط الخريطة لعرض العالم كاملاً 2D بشكل مسطح تماماً
+      map.setPitch(0); // تأكيد أن الخريطة مسطحة 100%
+      map.setBearing(0); // بدون دوران
       map.flyTo({
         center: [0, 20], // مركز العالم
         zoom: 1.5, // زوم لعرض العالم كاملاً
-        pitch: 0, // بدون ميل (2D)
+        pitch: 0, // بدون ميل (2D مسطح تماماً)
         bearing: 0, // بدون دوران
         duration: 0,
         animate: false
