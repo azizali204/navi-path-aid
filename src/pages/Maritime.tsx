@@ -13,6 +13,8 @@ import MaritimeFilters from '@/components/maritime/MaritimeFilters';
 import OperationZoneEditor from '@/components/maritime/OperationZoneEditor';
 import ZoneTracker from '@/components/maritime/ZoneTracker';
 import MapClickHandler from '@/components/maritime/MapClickHandler';
+import { NewsEventsPanel } from '@/components/maritime/NewsEventsPanel';
+import { NewsEventMarkers } from '@/components/maritime/NewsEventMarkers';
 import { useToast } from '@/components/ui/use-toast';
 
 export interface Ship {
@@ -45,6 +47,7 @@ const Maritime = () => {
   const [tracking, setTracking] = useState(false);
   const [layersVisible, setLayersVisible] = useState({ ships: true, zone: true, seamarks: true });
   const [clickToSetZone, setClickToSetZone] = useState(false);
+  const [newsEvents, setNewsEvents] = useState<any[]>([]);
 
   const connectWebSocket = useCallback(() => {
     const projectId = 'mvtowcdrwyzbcmwpuppl';
@@ -180,7 +183,7 @@ const Maritime = () => {
         {/* Sidebar */}
         <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-background overflow-y-auto max-h-[40vh] lg:max-h-none">
           <Tabs defaultValue="filters" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 sticky top-0 z-10 bg-background">
+            <TabsList className="w-full grid grid-cols-4 sticky top-0 z-10 bg-background">
               <TabsTrigger value="filters" className="text-xs sm:text-sm py-2">
                 <Target className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 فلترة
@@ -188,6 +191,10 @@ const Maritime = () => {
               <TabsTrigger value="zone" className="text-xs sm:text-sm py-2">
                 <Layers className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 المنطقة
+              </TabsTrigger>
+              <TabsTrigger value="events" className="text-xs sm:text-sm py-2">
+                <Target className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                الأحداث
               </TabsTrigger>
               <TabsTrigger value="layers" className="text-xs sm:text-sm py-2">
                 <Eye className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
@@ -212,6 +219,10 @@ const Maritime = () => {
                 zone={operationZone}
                 ships={filteredShips}
               />
+            </TabsContent>
+
+            <TabsContent value="events" className="p-2 sm:p-4">
+              <NewsEventsPanel onEventsFound={setNewsEvents} />
             </TabsContent>
 
             <TabsContent value="layers" className="p-2 sm:p-4">
@@ -274,6 +285,7 @@ const Maritime = () => {
             {layersVisible.ships ? (
               <MaritimeShipMarkers ships={filteredShips} />
             ) : null}
+            <NewsEventMarkers events={newsEvents} />
             {layersVisible.zone ? (
               <Circle
                 center={operationZone.center as LatLngExpression}
