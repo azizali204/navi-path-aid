@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FileImage, Presentation } from "lucide-react";
+import { FileImage, Presentation, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRef } from "react";
 import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
@@ -86,7 +86,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       return;
     }
 
-    // حفظ العرض الحالي خارج try للوصول إليه في catch
+    // حفظ العرض الحالي
     const originalCenter = map.getCenter();
     const originalZoom = map.getZoom();
     const originalPitch = map.getPitch();
@@ -95,7 +95,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: markers.length > 0 ? "يتم إنشاء صورة خريطة العالم مع جميع الرموز" : "يتم إنشاء صورة خريطة العالم",
+        description: markers.length > 0 ? "يتم إنشاء صورة خريطة العالم 2D مع جميع الرموز" : "يتم إنشاء صورة خريطة العالم 2D",
       });
 
       // ضبط الخريطة لعرض العالم كاملاً 2D بشكل مسطح تماماً
@@ -113,18 +113,16 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       // انتظار استقرار الخريطة
       await new Promise<void>((resolve) => {
         map.once('idle', () => {
-          setTimeout(() => resolve(), 1000); // وقت أطول للتأكد من تحميل خريطة العالم
+          setTimeout(() => resolve(), 1000);
         });
       });
 
-      // الحصول على canvas الخريطة الأساسية
+      // الحصول على canvas الخريطة
       const baseCanvas: HTMLCanvasElement = map.getCanvas();
       const container: HTMLDivElement = map.getContainer();
       
-      // معامل تكبير لزيادة جودة الصورة (2x للجودة العالية)
       const scaleFactor = 2;
       
-      // إنشاء canvas جديد بحجم أكبر للجودة العالية
       const outputCanvas = document.createElement('canvas');
       outputCanvas.width = baseCanvas.width * scaleFactor;
       outputCanvas.height = baseCanvas.height * scaleFactor;
@@ -134,20 +132,16 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         throw new Error('فشل في إنشاء السياق');
       }
 
-      // تحسين جودة الرسم
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      // 1. رسم الخريطة الأساسية أولاً بحجم مكبر
       ctx.drawImage(baseCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-      // 2. رسم الرموز إذا كانت موجودة
+      // رسم الرموز إذا كانت موجودة
       if (markers.length > 0) {
-        // حساب النسبة بين CSS pixels و canvas pixels مع معامل التكبير
         const cssWidth = container.clientWidth || baseCanvas.width;
         const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
-        // تحميل ورسم الأيقونات فوق الخريطة
         const iconSizeCss = 32;
         const iconSize = iconSizeCss * ratio;
         const ringRadius = 20 * ratio;
@@ -155,23 +149,19 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
         for (const marker of markers) {
           try {
-            // حساب موقع الأيقونة على الخريطة
             const point = map.project({ lng: marker.lng, lat: marker.lat });
             const x = point.x * ratio;
             const y = point.y * ratio;
 
-            // تخطي الأيقونات خارج حدود الخريطة
             if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
               continue;
             }
 
-            // رسم خلفية دائرية خفيفة
             ctx.beginPath();
             ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
             ctx.fill();
 
-            // رسم إطار دائري حسب مستوى الأهمية
             ctx.beginPath();
             ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
             ctx.lineWidth = 3 * ratio;
@@ -181,7 +171,6 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // رسم الأيقونة
             const iconImage = await getIconForMarker(marker);
             ctx.drawImage(
               iconImage,
@@ -196,7 +185,6 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         }
       }
 
-      // 3. تصدير الصورة النهائية
       outputCanvas.toBlob((blob) => {
         if (!blob) {
           toast({
@@ -204,7 +192,6 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
             description: "فشل في إنشاء الصورة",
             variant: "destructive",
           });
-          // إعادة العرض الأصلي
           map.flyTo({
             center: originalCenter,
             zoom: originalZoom,
@@ -218,11 +205,10 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `world-map-${Date.now()}.png`;
+        a.download = `world-map-2d-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
 
-        // إعادة العرض الأصلي
         map.flyTo({
           center: originalCenter,
           zoom: originalZoom,
@@ -233,14 +219,13 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
         toast({
           title: "تم التصدير ✓",
-          description: markers.length > 0 ? `تم حفظ خريطة العالم مع ${markers.length} رمز` : "تم حفظ خريطة العالم",
+          description: markers.length > 0 ? `تم حفظ خريطة العالم 2D مع ${markers.length} رمز` : "تم حفظ خريطة العالم 2D",
         });
       }, 'image/png', 0.95);
 
     } catch (error) {
       console.error('خطأ في التصدير:', error);
       
-      // إعادة العرض الأصلي في حالة الخطأ
       try {
         map.flyTo({
           center: originalCenter,
@@ -256,6 +241,177 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       toast({
         title: "خطأ",
         description: "فشل تصدير الصورة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportPNG3D = async () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const originalCenter = map.getCenter();
+    const originalZoom = map.getZoom();
+    const originalPitch = map.getPitch();
+    const originalBearing = map.getBearing();
+    const originalProjection = map.getProjection();
+
+    try {
+      toast({
+        title: "جاري التصدير 3D...",
+        description: "يتم إنشاء صورة كروية ثلاثية الأبعاد",
+      });
+
+      // تغيير إلى عرض globe 3D
+      map.setProjection('globe');
+      map.flyTo({
+        center: [0, 20],
+        zoom: 1.5,
+        pitch: 0,
+        bearing: 0,
+        duration: 0,
+        animate: false
+      });
+
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          setTimeout(() => resolve(), 1200);
+        });
+      });
+
+      const baseCanvas: HTMLCanvasElement = map.getCanvas();
+      const container: HTMLDivElement = map.getContainer();
+      
+      const scaleFactor = 2;
+      
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = baseCanvas.width * scaleFactor;
+      outputCanvas.height = baseCanvas.height * scaleFactor;
+      const ctx = outputCanvas.getContext('2d', { alpha: false });
+      
+      if (!ctx) {
+        throw new Error('فشل في إنشاء السياق');
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      ctx.drawImage(baseCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+
+      // رسم الرموز
+      if (markers.length > 0) {
+        const cssWidth = container.clientWidth || baseCanvas.width;
+        const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
+
+        const iconSizeCss = 32;
+        const iconSize = iconSizeCss * ratio;
+        const ringRadius = 20 * ratio;
+        const ringFillRadius = 18 * ratio;
+
+        for (const marker of markers) {
+          try {
+            const point = map.project({ lng: marker.lng, lat: marker.lat });
+            const x = point.x * ratio;
+            const y = point.y * ratio;
+
+            if (x < -50 || y < -50 || x > outputCanvas.width + 50 || y > outputCanvas.height + 50) {
+              continue;
+            }
+
+            ctx.beginPath();
+            ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3 * ratio;
+            ctx.strokeStyle = getSeverityColor(marker.severity);
+            ctx.shadowBlur = 10 * ratio;
+            ctx.shadowColor = getSeverityColor(marker.severity);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            const iconImage = await getIconForMarker(marker);
+            ctx.drawImage(
+              iconImage,
+              x - iconSize / 2,
+              y - iconSize / 2,
+              iconSize,
+              iconSize
+            );
+          } catch (error) {
+            console.error('خطأ في رسم الأيقونة:', marker.id, error);
+          }
+        }
+      }
+
+      outputCanvas.toBlob((blob) => {
+        if (!blob) {
+          toast({
+            title: "خطأ",
+            description: "فشل في إنشاء الصورة",
+            variant: "destructive",
+          });
+          map.setProjection(originalProjection);
+          map.flyTo({
+            center: originalCenter,
+            zoom: originalZoom,
+            pitch: originalPitch,
+            bearing: originalBearing,
+            animate: false
+          });
+          return;
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `world-map-3d-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // إعادة للوضع الأصلي
+        map.setProjection(originalProjection);
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          duration: 1000
+        });
+
+        toast({
+          title: "تم التصدير 3D ✓",
+          description: markers.length > 0 ? `تم حفظ الكرة الأرضية 3D مع ${markers.length} رمز` : "تم حفظ الكرة الأرضية 3D",
+        });
+      }, 'image/png', 0.95);
+
+    } catch (error) {
+      console.error('خطأ في التصدير 3D:', error);
+      
+      try {
+        map.setProjection(originalProjection);
+        map.flyTo({
+          center: originalCenter,
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          animate: false
+        });
+      } catch (e) {
+        console.error('خطأ في إعادة العرض:', e);
+      }
+      
+      toast({
+        title: "خطأ",
+        description: "فشل تصدير الصورة 3D",
         variant: "destructive",
       });
     }
@@ -516,7 +672,18 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         disabled={!map}
       >
         <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        PNG
+        PNG (2D مسطح)
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+        onClick={exportPNG3D}
+        disabled={!map}
+      >
+        <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        PNG (3D كروي)
       </Button>
 
       <Button

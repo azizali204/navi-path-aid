@@ -132,6 +132,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         center,
         zoom,
         pitch: 0,
+        projection: 'mercator', // خريطة 2D مسطحة بدلاً من الكرة الأرضية
         // مهم للتصدير: يسمح بقراءة Canvas الخاص بالخريطة
         preserveDrawingBuffer: true,
         antialias: true,
