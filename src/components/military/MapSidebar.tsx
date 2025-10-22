@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Link } from "react-router-dom";
 import { 
   Plus, 
   Save, 
@@ -18,8 +17,7 @@ import {
   Pencil,
   Trash2,
   Download,
-  Menu,
-  Ship
+  Menu
 } from "lucide-react";
 import { IconLabelsAr, CategoryLabelsAr, IconCategories } from "./MilitarySymbolIcons";
 import { MarkersTable } from "./MarkersTable";
@@ -108,12 +106,6 @@ export const MapSidebar = ({
               حفظ
             </Button>
           </div>
-          <Link to="/maritime" className="w-full">
-            <Button variant="secondary" className="w-full gap-2 h-9 sm:h-10 text-sm sm:text-base">
-              <Ship className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              خريطة حركة السفن
-            </Button>
-          </Link>
         </div>
       </div>
 
