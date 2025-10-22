@@ -66,7 +66,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   const [editingMarker, setEditingMarker] = useState<MarkerData | null>(null);
   const [pickingCoordinates, setPickingCoordinates] = useState(false);
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
-  const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/dark-v11');
+  const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/outdoors-v12');
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
   const { toast } = useToast();
@@ -642,6 +642,18 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       {mapStyleMenuOpen && (
         <div className="absolute top-[42px] sm:top-[52px] left-2 sm:left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in max-w-[calc(100vw-2rem)] sm:max-w-none">
           <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
+                <button
+                  onClick={() => {
+                    changeMapStyle('mapbox://styles/mapbox/outdoors-v12');
+                    setMapStyleMenuOpen(false);
+                  }}
+                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
+                    mapStyle === 'mapbox://styles/mapbox/outdoors-v12' ? 'bg-accent' : ''
+                  }`}
+                  title="ملاحة بحرية"
+                >
+                  ⚓ ملاحة بحرية
+                </button>
                 <button
                   onClick={() => {
                     changeMapStyle('mapbox://styles/mapbox/satellite-v9');
