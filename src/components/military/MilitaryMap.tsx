@@ -5,6 +5,7 @@ import { MilitarySymbolIcons } from "./MilitarySymbolIcons";
 import { MapSidebar } from "./MapSidebar";
 import { AddMarkerDialog } from "./AddMarkerDialog";
 import { NewsEventMarkersMapbox } from "./NewsEventMarkersMapbox";
+import { AIChatPanel } from "./AIChatPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -642,6 +643,21 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
         <NewsEventMarkersMapbox events={newsEvents} map={map.current} />
+        
+        <AIChatPanel
+          markers={customMarkers}
+          onAddMarker={handleSaveMarker}
+          onMoveMarker={(markerId, coordinates) => {
+            const marker = customMarkers.find(m => m.id.toString() === markerId);
+            if (marker) {
+              handleEditMarker({
+                ...marker,
+                lat: coordinates[1],
+                lng: coordinates[0]
+              });
+            }
+          }}
+        />
 
       {/* زر إظهار/إخفاء القائمة الجانبية - مخفي على الموبايل */}
       <button
