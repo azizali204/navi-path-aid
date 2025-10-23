@@ -387,27 +387,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     if (!map.current) return;
 
     try {
-      // Add bathymetric depth contours with color gradient
-      if (!map.current.getSource('bathymetry')) {
-        map.current.addSource('bathymetry', {
-          type: 'raster',
-          tiles: ['https://tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '© EMODnet Bathymetry'
-        });
-      }
-
-      if (!map.current.getLayer('bathymetry-layer')) {
-        map.current.addLayer({
-          id: 'bathymetry-layer',
-          type: 'raster',
-          source: 'bathymetry',
-          paint: {
-            'raster-opacity': 0.65 // Visible by default for nautical charts
-          }
-        });
-      }
-
       // Add custom depth contour lines (GeoJSON-based)
       if (!map.current.getSource('depth-contours')) {
         map.current.addSource('depth-contours', {
@@ -520,7 +499,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       // Generate sample maritime markers for Red Sea / Jeddah area
       const maritimeMarkers = generateMaritimeMarkers();
 
-      // Add lighthouses layer
+      // Add lighthouses layer with custom styling
       if (!map.current.getSource('lighthouses')) {
         map.current.addSource('lighthouses', {
           type: 'geojson',
@@ -532,17 +511,28 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       }
 
       if (!map.current.getLayer('lighthouses-layer')) {
+        // Draw lighthouse as a circle with distinctive styling
         map.current.addLayer({
           id: 'lighthouses-layer',
+          type: 'circle',
+          source: 'lighthouses',
+          paint: {
+            'circle-radius': 10,
+            'circle-color': '#fbbf24',
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#1c1c1c'
+          }
+        });
+
+        // Add lighthouse labels
+        map.current.addLayer({
+          id: 'lighthouses-labels',
           type: 'symbol',
           source: 'lighthouses',
           layout: {
-            'icon-image': 'lighthouse-15',
-            'icon-size': 1.5,
-            'icon-allow-overlap': true,
             'text-field': ['get', 'name'],
             'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
-            'text-size': 10,
+            'text-size': 11,
             'text-offset': [0, 1.5],
             'text-anchor': 'top'
           },
@@ -593,8 +583,8 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           minzoom: 12,
           layout: {
             'text-field': ['get', 'label'],
-            'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-            'text-size': 9,
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': 10,
             'text-offset': [0, 1.2],
             'text-anchor': 'top'
           },
@@ -618,14 +608,25 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       }
 
       if (!map.current.getLayer('ports-layer')) {
+        // Draw port as a larger distinctive shape
         map.current.addLayer({
           id: 'ports-layer',
+          type: 'circle',
+          source: 'ports',
+          paint: {
+            'circle-radius': 12,
+            'circle-color': '#dc2626',
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        // Add port labels
+        map.current.addLayer({
+          id: 'ports-labels',
           type: 'symbol',
           source: 'ports',
           layout: {
-            'icon-image': 'harbor-15',
-            'icon-size': 1.8,
-            'icon-allow-overlap': true,
             'text-field': ['get', 'name'],
             'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
             'text-size': 12,
@@ -633,7 +634,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
             'text-anchor': 'top'
           },
           paint: {
-            'icon-color': '#dc2626',
             'text-color': '#1c1c1c',
             'text-halo-color': '#ffffff',
             'text-halo-width': 2
@@ -762,7 +762,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
 
     const layerMap: Record<string, string> = {
       navigation: 'openseamap-layer',
-      bathymetry: 'bathymetry-layer',
       depthLabels: 'depth-labels-layer',
       contours: 'depth-contours-layer',
       lighthouses: 'lighthouses-layer',
@@ -782,7 +781,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         map.current.setPaintProperty(
           actualLayerId,
           'raster-opacity',
-          enabled ? (layerId === 'navigation' ? 0.85 : 0.65) : 0
+          enabled ? 0.85 : 0
         );
       }
     }

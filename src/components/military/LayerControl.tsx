@@ -16,7 +16,6 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
   const [isExpanded, setIsExpanded] = useState(true);
   const [layers, setLayers] = useState({
     navigation: true,
-    bathymetry: true,
     depthLabels: true,
     contours: true,
     lighthouses: true,
@@ -68,18 +67,6 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
             {/* Overlay Layers */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground">طبقات قياس الأعماق</h3>
-
-              <div className="flex items-center justify-between space-x-2">
-                <Label htmlFor="bathymetry" className="text-sm cursor-pointer flex-1">
-                  تدرج ألوان الأعماق
-                  <span className="block text-xs text-muted-foreground">أزرق فاتح → غامق</span>
-                </Label>
-                <Switch
-                  id="bathymetry"
-                  checked={layers.bathymetry}
-                  onCheckedChange={(checked) => handleLayerToggle('bathymetry', checked)}
-                />
-              </div>
 
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="depthLabels" className="text-sm cursor-pointer flex-1">
