@@ -17,8 +17,11 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
   const [layers, setLayers] = useState({
     navigation: true,
     bathymetry: true,
-    depthLabels: false,
-    contours: false,
+    depthLabels: true,
+    contours: true,
+    lighthouses: true,
+    buoys: true,
+    ports: true,
   });
 
   const handleLayerToggle = (layerId: string, enabled: boolean) => {
@@ -52,21 +55,11 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
           <>
             <Separator className="mb-4" />
 
-            {/* Base Map Selection */}
-            <div className="space-y-3 mb-4">
+            {/* Base Map - Fixed to Light */}
+            <div className="space-y-2 mb-4">
               <h3 className="text-sm font-semibold text-muted-foreground">الخريطة الأساسية</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {baseMaps.map(map => (
-                  <Button
-                    key={map.id}
-                    variant={currentBaseMap === map.style ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onBaseMapChange(map.style)}
-                    className="text-xs"
-                  >
-                    {map.name}
-                  </Button>
-                ))}
+              <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded">
+                خريطة بحرية فاتحة (ENC Style)
               </div>
             </div>
 
@@ -74,24 +67,12 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
 
             {/* Overlay Layers */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground">طبقات الخريطة البحرية (ENC)</h3>
-
-              <div className="flex items-center justify-between space-x-2">
-                <Label htmlFor="navigation" className="text-sm cursor-pointer flex-1">
-                  علامات الملاحة (OpenSeaMap)
-                  <span className="block text-xs text-muted-foreground">منارات، عوامات، موانئ</span>
-                </Label>
-                <Switch
-                  id="navigation"
-                  checked={layers.navigation}
-                  onCheckedChange={(checked) => handleLayerToggle('navigation', checked)}
-                />
-              </div>
+              <h3 className="text-sm font-semibold text-muted-foreground">طبقات قياس الأعماق</h3>
 
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="bathymetry" className="text-sm cursor-pointer flex-1">
-                  خريطة قياس الأعماق
-                  <span className="block text-xs text-muted-foreground">تدرج الألوان حسب العمق</span>
+                  تدرج ألوان الأعماق
+                  <span className="block text-xs text-muted-foreground">أزرق فاتح → غامق</span>
                 </Label>
                 <Switch
                   id="bathymetry"
@@ -103,7 +84,7 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="depthLabels" className="text-sm cursor-pointer flex-1">
                   أرقام الأعماق
-                  <span className="block text-xs text-muted-foreground">عرض قيم العمق بالمتر</span>
+                  <span className="block text-xs text-muted-foreground">قيم العمق بالمتر</span>
                 </Label>
                 <Switch
                   id="depthLabels"
@@ -121,6 +102,61 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
                   id="contours"
                   checked={layers.contours}
                   onCheckedChange={(checked) => handleLayerToggle('contours', checked)}
+                />
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            {/* Maritime Navigation Markers */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground">علامات الملاحة البحرية</h3>
+
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="navigation" className="text-sm cursor-pointer flex-1">
+                  طبقة OpenSeaMap
+                  <span className="block text-xs text-muted-foreground">خرائط ملاحية عامة</span>
+                </Label>
+                <Switch
+                  id="navigation"
+                  checked={layers.navigation}
+                  onCheckedChange={(checked) => handleLayerToggle('navigation', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="lighthouses" className="text-sm cursor-pointer flex-1">
+                  المنارات البحرية
+                  <span className="block text-xs text-muted-foreground">منارات وإشارات ضوئية</span>
+                </Label>
+                <Switch
+                  id="lighthouses"
+                  checked={layers.lighthouses}
+                  onCheckedChange={(checked) => handleLayerToggle('lighthouses', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="buoys" className="text-sm cursor-pointer flex-1">
+                  العوامات والشمندورات
+                  <span className="block text-xs text-muted-foreground">علامات ملاحية عائمة</span>
+                </Label>
+                <Switch
+                  id="buoys"
+                  checked={layers.buoys}
+                  onCheckedChange={(checked) => handleLayerToggle('buoys', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="ports" className="text-sm cursor-pointer flex-1">
+                  الموانئ والمراسي
+                  <span className="block text-xs text-muted-foreground">موانئ ونقاط رسو</span>
+                </Label>
+                <Switch
+                  id="ports"
+                  checked={layers.ports}
+                  onCheckedChange={(checked) => handleLayerToggle('ports', checked)}
                 />
               </div>
             </div>

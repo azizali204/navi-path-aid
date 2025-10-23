@@ -271,6 +271,8 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         addOpenSeaMapLayer();
         // Add depth labels layer
         addDepthLabelsLayer();
+        // Add maritime navigation markers
+        addMaritimeMarkersLayers();
 
         setIsMapReady(true);
         renderMarkers([], customMarkers);
@@ -510,6 +512,251 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     return features;
   };
 
+  // Add maritime navigation markers layers (lighthouses, buoys, ports)
+  const addMaritimeMarkersLayers = () => {
+    if (!map.current) return;
+
+    try {
+      // Generate sample maritime markers for Red Sea / Jeddah area
+      const maritimeMarkers = generateMaritimeMarkers();
+
+      // Add lighthouses layer
+      if (!map.current.getSource('lighthouses')) {
+        map.current.addSource('lighthouses', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: maritimeMarkers.lighthouses
+          }
+        });
+      }
+
+      if (!map.current.getLayer('lighthouses-layer')) {
+        map.current.addLayer({
+          id: 'lighthouses-layer',
+          type: 'symbol',
+          source: 'lighthouses',
+          layout: {
+            'icon-image': 'lighthouse-15',
+            'icon-size': 1.5,
+            'icon-allow-overlap': true,
+            'text-field': ['get', 'name'],
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': 10,
+            'text-offset': [0, 1.5],
+            'text-anchor': 'top'
+          },
+          paint: {
+            'text-color': '#1c1c1c',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
+          }
+        });
+      }
+
+      // Add buoys layer
+      if (!map.current.getSource('buoys')) {
+        map.current.addSource('buoys', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: maritimeMarkers.buoys
+          }
+        });
+      }
+
+      if (!map.current.getLayer('buoys-layer')) {
+        map.current.addLayer({
+          id: 'buoys-layer',
+          type: 'circle',
+          source: 'buoys',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': [
+              'match',
+              ['get', 'type'],
+              'red', '#ef4444',
+              'green', '#22c55e',
+              'yellow', '#eab308',
+              '#3b82f6' // default blue
+            ],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        // Add buoy labels
+        map.current.addLayer({
+          id: 'buoys-labels-layer',
+          type: 'symbol',
+          source: 'buoys',
+          minzoom: 12,
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            'text-size': 9,
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top'
+          },
+          paint: {
+            'text-color': '#c026d3',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5
+          }
+        });
+      }
+
+      // Add ports layer
+      if (!map.current.getSource('ports')) {
+        map.current.addSource('ports', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: maritimeMarkers.ports
+          }
+        });
+      }
+
+      if (!map.current.getLayer('ports-layer')) {
+        map.current.addLayer({
+          id: 'ports-layer',
+          type: 'symbol',
+          source: 'ports',
+          layout: {
+            'icon-image': 'harbor-15',
+            'icon-size': 1.8,
+            'icon-allow-overlap': true,
+            'text-field': ['get', 'name'],
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+            'text-offset': [0, 1.8],
+            'text-anchor': 'top'
+          },
+          paint: {
+            'icon-color': '#dc2626',
+            'text-color': '#1c1c1c',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Error adding maritime markers:', error);
+    }
+  };
+
+  // Generate sample maritime markers
+  const generateMaritimeMarkers = () => {
+    return {
+      lighthouses: [
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.17, 21.65] as [number, number]
+          },
+          properties: {
+            name: 'منارة الشمال',
+            type: 'lighthouse'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.11, 21.45] as [number, number]
+          },
+          properties: {
+            name: 'منارة الجنوب',
+            type: 'lighthouse'
+          }
+        }
+      ],
+      buoys: [
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.13, 21.54] as [number, number]
+          },
+          properties: {
+            label: 'b',
+            type: 'red'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.15, 21.52] as [number, number]
+          },
+          properties: {
+            label: 'b',
+            type: 'green'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.14, 21.56] as [number, number]
+          },
+          properties: {
+            label: 'b',
+            type: 'red'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.12, 21.53] as [number, number]
+          },
+          properties: {
+            label: 'b',
+            type: 'green'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.16, 21.55] as [number, number]
+          },
+          properties: {
+            label: 'b',
+            type: 'yellow'
+          }
+        }
+      ],
+      ports: [
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.152, 21.543] as [number, number]
+          },
+          properties: {
+            name: 'ميناء جدة الإسلامي',
+            type: 'major_port'
+          }
+        },
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [39.18, 21.58] as [number, number]
+          },
+          properties: {
+            name: 'مرسى الصيد',
+            type: 'fishing_port'
+          }
+        }
+      ]
+    };
+  };
+
   const handleLayerChange = (layerId: string, enabled: boolean) => {
     if (!map.current) return;
 
@@ -518,11 +765,14 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       bathymetry: 'bathymetry-layer',
       depthLabels: 'depth-labels-layer',
       contours: 'depth-contours-layer',
+      lighthouses: 'lighthouses-layer',
+      buoys: 'buoys-layer',
+      ports: 'ports-layer',
     };
 
     const actualLayerId = layerMap[layerId];
     if (actualLayerId && map.current.getLayer(actualLayerId)) {
-      if (layerId === 'depthLabels' || layerId === 'contours') {
+      if (['depthLabels', 'contours', 'lighthouses', 'buoys', 'ports'].includes(layerId)) {
         map.current.setLayoutProperty(
           actualLayerId,
           'visibility',
