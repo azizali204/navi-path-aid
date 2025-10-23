@@ -16,8 +16,9 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
   const [isExpanded, setIsExpanded] = useState(true);
   const [layers, setLayers] = useState({
     navigation: true,
-    bathymetry: false,
-    satellite: false,
+    bathymetry: true,
+    depthLabels: false,
+    contours: false,
   });
 
   const handleLayerToggle = (layerId: string, enabled: boolean) => {
@@ -26,10 +27,10 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
   };
 
   const baseMaps = [
-    { id: 'streets', name: 'شوارع', style: 'mapbox://styles/mapbox/streets-v12' },
+    { id: 'light', name: 'خريطة بحرية فاتحة', style: 'mapbox://styles/mapbox/light-v11' },
     { id: 'satellite', name: 'أقمار صناعية', style: 'mapbox://styles/mapbox/satellite-streets-v12' },
+    { id: 'outdoors', name: 'طبوغرافية', style: 'mapbox://styles/mapbox/outdoors-v12' },
     { id: 'dark', name: 'داكن', style: 'mapbox://styles/mapbox/dark-v11' },
-    { id: 'light', name: 'فاتح', style: 'mapbox://styles/mapbox/light-v11' },
   ];
 
   return (
@@ -73,12 +74,12 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
 
             {/* Overlay Layers */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground">الطبقات البحرية</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground">طبقات الخريطة البحرية (ENC)</h3>
 
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="navigation" className="text-sm cursor-pointer flex-1">
-                  طبقة الملاحة البحرية
-                  <span className="block text-xs text-muted-foreground">علامات، موانئ، خطوط شحن</span>
+                  علامات الملاحة (OpenSeaMap)
+                  <span className="block text-xs text-muted-foreground">منارات، عوامات، موانئ</span>
                 </Label>
                 <Switch
                   id="navigation"
@@ -89,8 +90,8 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
 
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="bathymetry" className="text-sm cursor-pointer flex-1">
-                  طبقة قياس الأعماق
-                  <span className="block text-xs text-muted-foreground">خطوط العمق والتضاريس</span>
+                  خريطة قياس الأعماق
+                  <span className="block text-xs text-muted-foreground">تدرج الألوان حسب العمق</span>
                 </Label>
                 <Switch
                   id="bathymetry"
@@ -100,14 +101,26 @@ export const LayerControl = ({ onLayerChange, onBaseMapChange, currentBaseMap }:
               </div>
 
               <div className="flex items-center justify-between space-x-2">
-                <Label htmlFor="satellite" className="text-sm cursor-pointer flex-1">
-                  تفاصيل الأقمار الصناعية
-                  <span className="block text-xs text-muted-foreground">صور عالية الدقة</span>
+                <Label htmlFor="depthLabels" className="text-sm cursor-pointer flex-1">
+                  أرقام الأعماق
+                  <span className="block text-xs text-muted-foreground">عرض قيم العمق بالمتر</span>
                 </Label>
                 <Switch
-                  id="satellite"
-                  checked={layers.satellite}
-                  onCheckedChange={(checked) => handleLayerToggle('satellite', checked)}
+                  id="depthLabels"
+                  checked={layers.depthLabels}
+                  onCheckedChange={(checked) => handleLayerToggle('depthLabels', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="contours" className="text-sm cursor-pointer flex-1">
+                  خطوط الكنتور
+                  <span className="block text-xs text-muted-foreground">خطوط العمق المتساوية</span>
+                </Label>
+                <Switch
+                  id="contours"
+                  checked={layers.contours}
+                  onCheckedChange={(checked) => handleLayerToggle('contours', checked)}
                 />
               </div>
             </div>

@@ -134,12 +134,11 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: mapStyle,
+        style: 'mapbox://styles/mapbox/light-v11', // Light base for nautical charts
         center,
         zoom,
         pitch: 0,
-        projection: 'mercator', // خريطة 2D مسطحة بدلاً من الكرة الأرضية
-        // مهم للتصدير: يسمح بقراءة Canvas الخاص بالخريطة
+        projection: 'mercator',
         preserveDrawingBuffer: true,
         antialias: true,
       });
@@ -264,10 +263,14 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       });
 
       map.current.on('load', () => {
-        // إضافة طبقة OpenSeaMap للخرائط البحرية (تشبه C-MAP)
-        addOpenSeaMapLayer();
-        // إضافة طبقة قياس الأعماق
+        // Apply ENC-style nautical chart styling
+        applyNauticalChartStyle();
+        // Add bathymetric depth contours and shading
         addBathymetryLayer();
+        // Add OpenSeaMap for navigation aids
+        addOpenSeaMapLayer();
+        // Add depth labels layer
+        addDepthLabelsLayer();
 
         setIsMapReady(true);
         renderMarkers([], customMarkers);
@@ -338,11 +341,51 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     }
   };
 
+  // Apply professional ENC-style nautical chart styling
+  const applyNauticalChartStyle = () => {
+    if (!map.current) return;
+
+    try {
+      // Style water areas with depth-based gradient (light blue to dark blue)
+      map.current.setPaintProperty('water', 'fill-color', [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        0, '#a8d8ea', // Light blue for shallow
+        8, '#5fa8d3',  // Medium blue
+        12, '#1c5d99', // Deep blue
+        16, '#003d5c'  // Very deep blue
+      ]);
+
+      // Style land areas with orange/tan color (ENC style)
+      if (map.current.getLayer('land')) {
+        map.current.setPaintProperty('land', 'background-color', '#f4d58d');
+      }
+
+      // Make parks/natural areas lighter tan
+      const landLayers = ['landuse', 'landcover', 'national-park'];
+      landLayers.forEach(layerId => {
+        if (map.current?.getLayer(layerId)) {
+          map.current.setPaintProperty(layerId, 'fill-color', '#f9e4bc');
+        }
+      });
+
+      // Style buildings/piers in grey
+      if (map.current.getLayer('building')) {
+        map.current.setPaintProperty('building', 'fill-color', '#d0d0d0');
+        map.current.setPaintProperty('building', 'fill-opacity', 0.7);
+      }
+
+    } catch (error) {
+      console.error('Error applying nautical chart style:', error);
+    }
+  };
+
   const addBathymetryLayer = () => {
     if (!map.current) return;
 
     try {
-      // EMODnet Bathymetry tiles
+      // Add bathymetric depth contours with color gradient
       if (!map.current.getSource('bathymetry')) {
         map.current.addSource('bathymetry', {
           type: 'raster',
@@ -358,13 +401,113 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           type: 'raster',
           source: 'bathymetry',
           paint: {
-            'raster-opacity': 0 // Initially hidden
+            'raster-opacity': 0.65 // Visible by default for nautical charts
           }
-        }, 'openseamap-layer');
+        });
+      }
+
+      // Add custom depth contour lines (GeoJSON-based)
+      if (!map.current.getSource('depth-contours')) {
+        map.current.addSource('depth-contours', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [] // Will be populated with depth contour lines
+          }
+        });
+      }
+
+      if (!map.current.getLayer('depth-contours-layer')) {
+        map.current.addLayer({
+          id: 'depth-contours-layer',
+          type: 'line',
+          source: 'depth-contours',
+          paint: {
+            'line-color': '#0066cc',
+            'line-width': 1,
+            'line-opacity': 0.5
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Error adding bathymetry layer:', error);
+    }
+  };
+
+  const addDepthLabelsLayer = () => {
+    if (!map.current) return;
+
+    try {
+      // Add depth labels that appear at higher zoom levels
+      if (!map.current.getSource('depth-labels')) {
+        // Generate sample depth points for Red Sea / Jeddah area
+        const depthPoints = generateDepthPoints();
+        
+        map.current.addSource('depth-labels', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: depthPoints
+          }
+        });
+      }
+
+      if (!map.current.getLayer('depth-labels-layer')) {
+        map.current.addLayer({
+          id: 'depth-labels-layer',
+          type: 'symbol',
+          source: 'depth-labels',
+          minzoom: 11, // Only show at zoom 11+
+          layout: {
+            'text-field': ['get', 'depth'],
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': 11,
+            'text-allow-overlap': false,
+            'text-ignore-placement': false
+          },
+          paint: {
+            'text-color': '#003d5c',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5
+          }
+        });
       }
     } catch (error) {
-      console.error('خطأ في إضافة طبقة Bathymetry:', error);
+      console.error('Error adding depth labels:', error);
     }
+  };
+
+  // Generate depth points for the Red Sea area
+  const generateDepthPoints = () => {
+    const features = [];
+    const bounds = {
+      north: 21.7,
+      south: 21.3,
+      east: 39.3,
+      west: 38.9
+    };
+
+    // Generate a grid of depth points
+    for (let lat = bounds.south; lat <= bounds.north; lat += 0.03) {
+      for (let lng = bounds.west; lng <= bounds.east; lng += 0.03) {
+        const depth = estimateDepth(lat, lng);
+        if (depth) {
+          features.push({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [lng, lat]
+            },
+            properties: {
+              depth: depth.toString()
+            }
+          });
+        }
+      }
+    }
+
+    return features;
   };
 
   const handleLayerChange = (layerId: string, enabled: boolean) => {
@@ -373,15 +516,25 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     const layerMap: Record<string, string> = {
       navigation: 'openseamap-layer',
       bathymetry: 'bathymetry-layer',
+      depthLabels: 'depth-labels-layer',
+      contours: 'depth-contours-layer',
     };
 
     const actualLayerId = layerMap[layerId];
     if (actualLayerId && map.current.getLayer(actualLayerId)) {
-      map.current.setPaintProperty(
-        actualLayerId,
-        'raster-opacity',
-        enabled ? (layerId === 'navigation' ? 0.85 : 0.7) : 0
-      );
+      if (layerId === 'depthLabels' || layerId === 'contours') {
+        map.current.setLayoutProperty(
+          actualLayerId,
+          'visibility',
+          enabled ? 'visible' : 'none'
+        );
+      } else {
+        map.current.setPaintProperty(
+          actualLayerId,
+          'raster-opacity',
+          enabled ? (layerId === 'navigation' ? 0.85 : 0.65) : 0
+        );
+      }
     }
   };
 

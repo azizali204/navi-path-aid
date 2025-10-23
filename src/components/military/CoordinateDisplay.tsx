@@ -19,23 +19,24 @@ export const CoordinateDisplay = ({ lat, lng, depth }: CoordinateDisplayProps) =
   };
 
   return (
-    <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-background/95 backdrop-blur-sm shadow-lg px-4 py-3" dir="rtl">
-      <div className="flex items-center gap-4 text-sm">
+    <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-[#001a33]/95 backdrop-blur-sm shadow-lg border-[#0066cc]/30" dir="rtl">
+      <div className="flex items-center gap-4 px-4 py-2.5 text-sm">
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary" />
+          <MapPin className="w-4 h-4 text-[#66b3ff]" />
           <div className="flex gap-3">
-            <div className="font-mono text-xs">{formatCoordinate(lat, true)}</div>
-            <div className="font-mono text-xs">{formatCoordinate(lng, false)}</div>
+            <div className="font-mono text-xs text-white">{formatCoordinate(lat, true)}</div>
+            <div className="font-mono text-xs text-white">{formatCoordinate(lng, false)}</div>
           </div>
         </div>
         
         {depth !== undefined && (
           <>
-            <div className="h-6 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <Compass className="w-4 h-4 text-blue-500" />
-              <div className="font-mono text-xs font-semibold">
-                {depth > 0 ? `${depth}m` : 'N/A'}
+            <div className="h-6 w-px bg-[#0066cc]/50" />
+            <div className="flex items-center gap-2 bg-[#0066cc]/20 px-3 py-1 rounded">
+              <Compass className="w-4 h-4 text-[#66b3ff]" />
+              <div className="flex items-baseline gap-1">
+                <span className="font-mono text-base font-bold text-white">{depth > 0 ? depth : '--'}</span>
+                <span className="text-xs text-[#66b3ff]">متر</span>
               </div>
             </div>
           </>
