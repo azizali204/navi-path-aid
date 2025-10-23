@@ -140,16 +140,17 @@ export const AIChatPanel = ({ markers, onAddMarker, onMoveMarker }: AIChatPanelP
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 z-[1000] rounded-full w-14 h-14 shadow-lg"
-        size="icon"
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000] rounded-full shadow-lg flex items-center gap-2 px-4"
+        size="default"
       >
-        <Bot className="w-6 h-6" />
+        <Bot className="w-5 h-5" />
+        <span>مساعد الخريطة الذكي</span>
       </Button>
     );
   }
 
   return (
-    <Card className="fixed bottom-6 left-6 z-[1000] w-96 h-[500px] flex flex-col shadow-2xl" dir="rtl">
+    <Card className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000] w-[500px] max-w-[90vw] h-[500px] flex flex-col shadow-2xl" dir="rtl">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5" />

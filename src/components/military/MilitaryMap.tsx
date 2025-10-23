@@ -1010,13 +1010,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         </div>
       )}
 
-      {/* شريط الإحداثيات */}
-        <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-[10] bg-card/95 backdrop-blur px-2 sm:px-4 py-1 sm:py-2 rounded-lg border border-border shadow-lg">
-          <div className="text-[10px] sm:text-xs md:text-sm font-mono text-foreground whitespace-nowrap" dir="ltr">
-            <span className="hidden sm:inline">Lat: {coordinates.lat.toFixed(4)}° | Lng: {coordinates.lng.toFixed(4)}°</span>
-            <span className="sm:hidden">{coordinates.lat.toFixed(3)}°, {coordinates.lng.toFixed(3)}°</span>
-          </div>
-        </div>
+      {/* شريط الإحداثيات - تم إزالته لصالح CoordinateDisplay الجديد */}
       </div>
 
       {/* مودال إضافة/تعديل نقطة */}

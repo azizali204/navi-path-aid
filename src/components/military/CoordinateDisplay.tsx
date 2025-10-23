@@ -19,33 +19,27 @@ export const CoordinateDisplay = ({ lat, lng, depth }: CoordinateDisplayProps) =
   };
 
   return (
-    <Card className="absolute bottom-4 left-4 z-[500] bg-background/95 backdrop-blur-sm shadow-lg px-4 py-3" dir="rtl">
-      <div className="flex items-center gap-6 text-sm">
+    <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-background/95 backdrop-blur-sm shadow-lg px-4 py-3" dir="rtl">
+      <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-primary" />
-          <div>
-            <div className="font-mono">{formatCoordinate(lat, true)}</div>
-            <div className="font-mono">{formatCoordinate(lng, false)}</div>
+          <div className="flex gap-3">
+            <div className="font-mono text-xs">{formatCoordinate(lat, true)}</div>
+            <div className="font-mono text-xs">{formatCoordinate(lng, false)}</div>
           </div>
         </div>
         
         {depth !== undefined && (
           <>
-            <div className="h-8 w-px bg-border" />
+            <div className="h-6 w-px bg-border" />
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-blue-500" />
-              <div>
-                <div className="text-xs text-muted-foreground">العمق</div>
-                <div className="font-mono font-semibold">{depth > 0 ? `${depth}m` : 'غير متوفر'}</div>
+              <div className="font-mono text-xs font-semibold">
+                {depth > 0 ? `${depth}m` : 'N/A'}
               </div>
             </div>
           </>
         )}
-
-        <div className="text-xs text-muted-foreground">
-          <div>خط العرض: {lat.toFixed(6)}</div>
-          <div>خط الطول: {lng.toFixed(6)}</div>
-        </div>
       </div>
     </Card>
   );
