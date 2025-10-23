@@ -404,103 +404,232 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     });
     markersRef.current = {};
 
-    // إضافة النقاط المخصصة فقط
+    // تجميع العلامات المتقاربة (clustering بسيط)
+    const clusterDistance = 0.05; // المسافة بالدرجات (~5 كم)
+    const clustered: { center: [number, number]; markers: MarkerData[] }[] = [];
+
     custom.forEach((markerData) => {
-      const type = markerData.type;
+      if (!activeCategories.has(markerData.type)) return;
 
-      if (!activeCategories.has(type)) return;
-
-      if (!markersRef.current[type]) {
-        markersRef.current[type] = [];
-      }
-
-
-      // التحقق من الأيقونات المخصصة
-      let iconHtml: string;
-      if (markerData.icon.startsWith('custom_')) {
-        const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
-        const customIcon = customIcons.find((icon: any) => icon.id === markerData.icon);
-        if (customIcon) {
-          iconHtml = `<img src="${customIcon.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
-        } else {
-          iconHtml = MilitarySymbolIcons.default;
+      // البحث عن cluster قريب
+      let foundCluster = false;
+      for (const cluster of clustered) {
+        const distance = Math.sqrt(
+          Math.pow(cluster.center[0] - markerData.lat, 2) + 
+          Math.pow(cluster.center[1] - markerData.lng, 2)
+        );
+        
+        if (distance < clusterDistance) {
+          cluster.markers.push(markerData);
+          // تحديث مركز الـ cluster
+          cluster.center = [
+            cluster.markers.reduce((sum, m) => sum + m.lat, 0) / cluster.markers.length,
+            cluster.markers.reduce((sum, m) => sum + m.lng, 0) / cluster.markers.length
+          ];
+          foundCluster = true;
+          break;
         }
-      } else {
-        iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
       }
-      const severityColor = markerData.severity === 'high' ? '#ef4444' : markerData.severity === 'medium' ? '#eab308' : '#22c55e';
-      
-      const el = document.createElement('div');
-      el.className = 'marker-container';
-      el.innerHTML = `
-        <div style="
-          width: 40px;
-          height: 40px;
-          border: 3px solid ${severityColor};
-          border-radius: 50%;
-          background: #2563eb22;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 0 10px ${severityColor}44;
-        ">
-          ${iconHtml}
-        </div>
-      `;
 
-      const popup = new mapboxgl.Popup({ offset: 25 })
-        .setHTML(`
-          <div dir="rtl" style="text-align: right; min-width: 200px;">
-            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
-              ${markerData.name_ar} 
-              <span style="font-size: 12px; color: #3b82f6;">(مخصص)</span>
-            </h3>
-            <p style="font-size: 14px; color: #666; margin-bottom: 4px;"><strong>النوع:</strong> ${markerData.type}</p>
-            <p style="font-size: 14px; margin-bottom: 12px;">${markerData.description_ar}</p>
-            <div style="display: flex; gap: 8px; margin-top: 8px;">
+      if (!foundCluster) {
+        clustered.push({
+          center: [markerData.lat, markerData.lng],
+          markers: [markerData]
+        });
+      }
+    });
+
+    // رسم العلامات أو الـ clusters
+    clustered.forEach((cluster) => {
+      if (cluster.markers.length === 1) {
+        // علامة واحدة - عرضها عادي
+        const markerData = cluster.markers[0];
+        const type = markerData.type;
+
+        if (!markersRef.current[type]) {
+          markersRef.current[type] = [];
+        }
+
+        let iconHtml: string;
+        if (markerData.icon.startsWith('custom_')) {
+          const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
+          const customIcon = customIcons.find((icon: any) => icon.id === markerData.icon);
+          if (customIcon) {
+            iconHtml = `<img src="${customIcon.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+          } else {
+            iconHtml = MilitarySymbolIcons.default;
+          }
+        } else {
+          iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
+        }
+        const severityColor = markerData.severity === 'high' ? '#ef4444' : markerData.severity === 'medium' ? '#eab308' : '#22c55e';
+        
+        const el = document.createElement('div');
+        el.className = 'marker-container';
+        el.innerHTML = `
+          <div style="
+            width: 40px;
+            height: 40px;
+            border: 3px solid ${severityColor};
+            border-radius: 50%;
+            background: #2563eb22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 10px ${severityColor}44;
+            transition: transform 0.2s;
+          " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            ${iconHtml}
+          </div>
+        `;
+
+        const popup = new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`
+            <div dir="rtl" style="text-align: right; min-width: 200px;">
+              <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+                ${markerData.name_ar} 
+                <span style="font-size: 12px; color: #3b82f6;">(مخصص)</span>
+              </h3>
+              <p style="font-size: 14px; color: #666; margin-bottom: 4px;"><strong>النوع:</strong> ${markerData.type}</p>
+              <p style="font-size: 14px; margin-bottom: 12px;">${markerData.description_ar}</p>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button 
+                  class="edit-marker-btn-${markerData.id}"
+                  style="flex: 1; background: #3b82f6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
+                >
+                  تعديل
+                </button>
+                <button 
+                  class="delete-marker-btn-${markerData.id}"
+                  style="flex: 1; background: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          `);
+
+        popup.on('open', () => {
+          const editBtn = document.querySelector(`.edit-marker-btn-${markerData.id}`);
+          const deleteBtn = document.querySelector(`.delete-marker-btn-${markerData.id}`);
+          
+          if (editBtn) {
+            editBtn.addEventListener('click', () => {
+              handleEditMarker(markerData);
+              popup.remove();
+            });
+          }
+          
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+              handleDeleteMarker(markerData.id);
+              popup.remove();
+            });
+          }
+        });
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([markerData.lng, markerData.lat])
+          .setPopup(popup)
+          .addTo(map.current!);
+
+        markersRef.current[type].push(marker);
+
+      } else {
+        // عدة علامات - عرض cluster
+        const highSeverity = cluster.markers.some(m => m.severity === 'high');
+        const clusterColor = highSeverity ? '#ef4444' : '#3b82f6';
+        
+        const el = document.createElement('div');
+        el.className = 'marker-cluster';
+        el.innerHTML = `
+          <div style="
+            width: 50px;
+            height: 50px;
+            border: 3px solid ${clusterColor};
+            border-radius: 50%;
+            background: linear-gradient(135deg, ${clusterColor}ee, ${clusterColor}99);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px ${clusterColor}77;
+            transition: transform 0.2s;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+          " onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+            ${cluster.markers.length}
+          </div>
+        `;
+
+        // قائمة بكل العلامات في الـ cluster
+        const markersList = cluster.markers.map(m => `
+          <div style="padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;" class="cluster-item-${m.id}">
+            <strong>${m.name_ar}</strong><br/>
+            <small style="color: #666;">${m.description_ar}</small>
+          </div>
+        `).join('');
+
+        const popup = new mapboxgl.Popup({ offset: 30, maxWidth: '300px' })
+          .setHTML(`
+            <div dir="rtl" style="text-align: right;">
+              <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${clusterColor};">
+                ${cluster.markers.length} علامات في هذه المنطقة
+              </h3>
+              <div style="max-height: 300px; overflow-y: auto;">
+                ${markersList}
+              </div>
               <button 
-                class="edit-marker-btn-${markerData.id}"
-                style="flex: 1; background: #3b82f6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
+                class="zoom-cluster-btn"
+                style="width: 100%; background: #3b82f6; color: white; padding: 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; margin-top: 8px;"
               >
-                تعديل
-              </button>
-              <button 
-                class="delete-marker-btn-${markerData.id}"
-                style="flex: 1; background: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;"
-              >
-                حذف
+                🔍 تكبير المنطقة
               </button>
             </div>
-          </div>
-        `);
+          `);
 
-      // إضافة event listeners بعد فتح الـ popup
-      popup.on('open', () => {
-        const editBtn = document.querySelector(`.edit-marker-btn-${markerData.id}`);
-        const deleteBtn = document.querySelector(`.delete-marker-btn-${markerData.id}`);
-        
-        if (editBtn) {
-          editBtn.addEventListener('click', () => {
-            handleEditMarker(markerData);
-            popup.remove();
+        popup.on('open', () => {
+          // التكبير على المنطقة
+          const zoomBtn = document.querySelector('.zoom-cluster-btn');
+          if (zoomBtn) {
+            zoomBtn.addEventListener('click', () => {
+              map.current?.flyTo({ 
+                center: [cluster.center[1], cluster.center[0]], 
+                zoom: map.current.getZoom() + 2, 
+                duration: 1500 
+              });
+              popup.remove();
+            });
+          }
+
+          // النقر على كل علامة
+          cluster.markers.forEach(m => {
+            const item = document.querySelector(`.cluster-item-${m.id}`);
+            if (item) {
+              item.addEventListener('click', () => {
+                map.current?.flyTo({ 
+                  center: [m.lng, m.lat], 
+                  zoom: 15, 
+                  duration: 2000 
+                });
+                popup.remove();
+              });
+            }
           });
-        }
-        
-        if (deleteBtn) {
-          deleteBtn.addEventListener('click', () => {
-            handleDeleteMarker(markerData.id);
-            popup.remove();
-          });
-        }
-      });
+        });
 
-      const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([markerData.lng, markerData.lat])
-        .setPopup(popup)
-        .addTo(map.current!);
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([cluster.center[1], cluster.center[0]])
+          .setPopup(popup)
+          .addTo(map.current!);
 
-      markersRef.current[type].push(marker);
+        if (!markersRef.current['cluster']) {
+          markersRef.current['cluster'] = [];
+        }
+        markersRef.current['cluster'].push(marker);
+      }
     });
   };
 
