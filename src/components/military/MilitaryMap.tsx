@@ -6,6 +6,8 @@ import { MapSidebar } from "./MapSidebar";
 import { AddMarkerDialog } from "./AddMarkerDialog";
 import { NewsEventMarkersMapbox } from "./NewsEventMarkersMapbox";
 import { AIChatPanel } from "./AIChatPanel";
+import { LayerControl } from "./LayerControl";
+import { CoordinateDisplay } from "./CoordinateDisplay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -70,6 +72,8 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/outdoors-v12');
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
+  const [mouseCoords, setMouseCoords] = useState({ lat: 15, lng: 42 });
+  const [currentDepth, setCurrentDepth] = useState<number | undefined>(undefined);
   const { toast } = useToast();
 
   // تحميل النقاط المخصصة من LocalStorage
@@ -250,30 +254,19 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         setTimeout(() => document.addEventListener('click', closeMenu), 0);
       });
 
+      // Mouse move for coordinate display and depth estimation
+      map.current.on('mousemove', (e) => {
+        setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        // Rough depth estimation based on location (Red Sea area)
+        const estimatedDepth = estimateDepth(e.lngLat.lat, e.lngLat.lng);
+        setCurrentDepth(estimatedDepth);
+      });
+
       map.current.on('load', () => {
         // إضافة طبقة OpenSeaMap للخرائط البحرية (تشبه C-MAP)
-        try {
-          map.current?.addSource('openseamap', {
-            type: 'raster',
-            tiles: [
-              'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
-            ],
-            tileSize: 256,
-            attribution: 'Map data: © <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
-          });
-
-          // إضافة طبقة الخريطة البحرية
-          map.current?.addLayer({
-            id: 'openseamap-layer',
-            type: 'raster',
-            source: 'openseamap',
-            paint: {
-              'raster-opacity': 0.75 // شفافية 75% لإظهار الخريطة الأساسية
-            }
-          });
-        } catch (error) {
-          console.error('خطأ في إضافة طبقة OpenSeaMap:', error);
-        }
+        addOpenSeaMapLayer();
+        // إضافة طبقة قياس الأعماق
+        addBathymetryLayer();
 
         setIsMapReady(true);
         renderMarkers([], customMarkers);
@@ -293,6 +286,107 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       map.current = null;
     };
   }, [mapboxToken]);
+
+  // Function to estimate depth based on coordinates (simplified)
+  const estimateDepth = (lat: number, lng: number): number | undefined => {
+    // Red Sea depth estimation based on location
+    // Central Red Sea (deeper): 42-43°E, 17-19°N -> ~500-1500m
+    // Coastal areas: shallower (~50-200m)
+    // This is a simplified estimation
+    
+    const isCentralRedSea = lng > 41 && lng < 44 && lat > 16 && lat < 20;
+    const isNorthernRedSea = lng > 33 && lng < 36 && lat > 27 && lat < 29;
+    const isGulfOfAden = lng > 43 && lng < 48 && lat > 11 && lat < 14;
+    
+    if (isCentralRedSea) {
+      return Math.floor(800 + Math.random() * 700); // 800-1500m
+    } else if (isNorthernRedSea) {
+      return Math.floor(200 + Math.random() * 300); // 200-500m
+    } else if (isGulfOfAden) {
+      return Math.floor(1000 + Math.random() * 2000); // 1000-3000m
+    } else {
+      return Math.floor(50 + Math.random() * 200); // coastal: 50-250m
+    }
+  };
+
+  const addOpenSeaMapLayer = () => {
+    if (!map.current) return;
+
+    try {
+      if (!map.current.getSource('openseamap')) {
+        map.current.addSource('openseamap', {
+          type: 'raster',
+          tiles: ['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenSeaMap contributors'
+        });
+      }
+
+      if (!map.current.getLayer('openseamap-layer')) {
+        map.current.addLayer({
+          id: 'openseamap-layer',
+          type: 'raster',
+          source: 'openseamap',
+          paint: {
+            'raster-opacity': 0.85
+          }
+        });
+      }
+    } catch (error) {
+      console.error('خطأ في إضافة طبقة OpenSeaMap:', error);
+    }
+  };
+
+  const addBathymetryLayer = () => {
+    if (!map.current) return;
+
+    try {
+      // EMODnet Bathymetry tiles
+      if (!map.current.getSource('bathymetry')) {
+        map.current.addSource('bathymetry', {
+          type: 'raster',
+          tiles: ['https://tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© EMODnet Bathymetry'
+        });
+      }
+
+      if (!map.current.getLayer('bathymetry-layer')) {
+        map.current.addLayer({
+          id: 'bathymetry-layer',
+          type: 'raster',
+          source: 'bathymetry',
+          paint: {
+            'raster-opacity': 0 // Initially hidden
+          }
+        }, 'openseamap-layer');
+      }
+    } catch (error) {
+      console.error('خطأ في إضافة طبقة Bathymetry:', error);
+    }
+  };
+
+  const handleLayerChange = (layerId: string, enabled: boolean) => {
+    if (!map.current) return;
+
+    const layerMap: Record<string, string> = {
+      navigation: 'openseamap-layer',
+      bathymetry: 'bathymetry-layer',
+    };
+
+    const actualLayerId = layerMap[layerId];
+    if (actualLayerId && map.current.getLayer(actualLayerId)) {
+      map.current.setPaintProperty(
+        actualLayerId,
+        'raster-opacity',
+        enabled ? (layerId === 'navigation' ? 0.85 : 0.7) : 0
+      );
+    }
+  };
+
+  const handleBaseMapChange = (style: string) => {
+    changeMapStyle(style);
+  };
 
   // تحديث العرض عند تغيير النقاط المخصصة
   useEffect(() => {
@@ -512,31 +606,9 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       
       // إعادة رسم النقاط وإضافة طبقة OpenSeaMap بعد تحميل النمط الجديد
       map.current.once('style.load', () => {
-        // إعادة إضافة طبقة OpenSeaMap البحرية
-        try {
-          if (!map.current?.getSource('openseamap')) {
-            map.current?.addSource('openseamap', {
-              type: 'raster',
-              tiles: [
-                'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
-              ],
-              tileSize: 256,
-              attribution: 'Map data: © <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
-            });
-
-            map.current?.addLayer({
-              id: 'openseamap-layer',
-              type: 'raster',
-              source: 'openseamap',
-              paint: {
-                'raster-opacity': 0.75
-              }
-            });
-          }
-        } catch (error) {
-          console.error('خطأ في إضافة طبقة OpenSeaMap:', error);
-        }
-
+        // إعادة إضافة طبقات التراكب
+        addOpenSeaMapLayer();
+        addBathymetryLayer();
         renderMarkers([], customMarkers);
       });
       
@@ -642,6 +714,21 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       {/* الخريطة */}
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
+        
+        {/* Layer Control */}
+        <LayerControl
+          onLayerChange={handleLayerChange}
+          onBaseMapChange={handleBaseMapChange}
+          currentBaseMap={mapStyle}
+        />
+
+        {/* Coordinate Display */}
+        <CoordinateDisplay 
+          lat={mouseCoords.lat} 
+          lng={mouseCoords.lng}
+          depth={currentDepth}
+        />
+
         <NewsEventMarkersMapbox events={newsEvents} map={map.current} />
         
         <AIChatPanel
