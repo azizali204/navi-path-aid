@@ -4,8 +4,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MilitarySymbolIcons, IconLabelsAr, IconCategories, CategoryLabelsAr } from "./MilitarySymbolIcons";
-import { Search, Upload, X } from "lucide-react";
+import { Search, Upload, X, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SymbolCategories, createMilSymbol } from "@/utils/milsymbolHelper";
 
 interface IconPickerProps {
   selectedIcon: string;
@@ -218,6 +219,58 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
     );
   };
 
+  const renderNATOSymbolsGrid = () => {
+    const filtered = SymbolCategories.filter(symbol => 
+      searchTerm ? symbol.name.includes(searchTerm) : true
+    );
+
+    if (filtered.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          لا توجد نتائج
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+        {filtered.map((symbol) => {
+          const isSelected = selectedIcon === symbol.id;
+          const symbolDataUrl = createMilSymbol(symbol.sidc, { size: 35 });
+          
+          return (
+            <button
+              key={symbol.id}
+              type="button"
+              onClick={() => onSelectIcon(symbol.id)}
+              className={`
+                flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all
+                hover:border-primary hover:bg-primary/10
+                ${isSelected ? 'border-primary bg-primary/20' : 'border-border'}
+              `}
+              title={symbol.name}
+            >
+              {symbolDataUrl ? (
+                <img 
+                  src={symbolDataUrl} 
+                  alt={symbol.name}
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                />
+              ) : (
+                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <span className="text-[10px] sm:text-xs text-center line-clamp-2">
+                {symbol.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   // الحصول على الأيقونة المختارة للمعاينة
   const getSelectedIconDisplay = () => {
     const customIcon = customIcons.find(icon => icon.id === selectedIcon);
@@ -290,8 +343,12 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
       </div>
 
       {/* تبويبات الفئات */}
-      <Tabs defaultValue="all" dir="rtl">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 text-xs sm:text-sm h-auto">
+      <Tabs defaultValue="nato" dir="rtl">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 text-xs sm:text-sm h-auto">
+          <TabsTrigger value="nato" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1">
+            <Shield className="w-3 h-3" />
+            NATO
+          </TabsTrigger>
           <TabsTrigger value="all" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2">الكل</TabsTrigger>
           <TabsTrigger value="custom" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 sm:py-2">مخصصة ({customIcons.length})</TabsTrigger>
           {Object.entries(CategoryLabelsAr).map(([key, label]) => (
@@ -302,6 +359,10 @@ export const IconPicker = ({ selectedIcon, onSelectIcon }: IconPickerProps) => {
         </TabsList>
 
         <ScrollArea className="h-[250px] sm:h-[300px] mt-3 sm:mt-4">
+          <TabsContent value="nato" className="mt-0">
+            {renderNATOSymbolsGrid()}
+          </TabsContent>
+
           <TabsContent value="all" className="mt-0">
             {renderIconGrid(Object.keys(MilitarySymbolIcons))}
           </TabsContent>

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { getSymbolByType } from "@/utils/milsymbolHelper";
 
 // DEMO: قم بوضع رمز Mapbox الخاص بك هنا
 // في الإنتاج: استخدم رمز خادم آمن أو Proxy
@@ -450,8 +451,15 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           markersRef.current[type] = [];
         }
 
+        // استخدام رموز NATO العسكرية
         let iconHtml: string;
-        if (markerData.icon.startsWith('custom_')) {
+        const natoSymbol = getSymbolByType(markerData.type, markerData.severity);
+        
+        if (natoSymbol) {
+          // استخدام رمز NATO
+          iconHtml = `<img src="${natoSymbol}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+        } else if (markerData.icon.startsWith('custom_')) {
+          // استخدام أيقونة مخصصة
           const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
           const customIcon = customIcons.find((icon: any) => icon.id === markerData.icon);
           if (customIcon) {
@@ -460,8 +468,10 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
             iconHtml = MilitarySymbolIcons.default;
           }
         } else {
+          // استخدام أيقونة عادية
           iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
         }
+        
         const severityColor = markerData.severity === 'high' ? '#ef4444' : markerData.severity === 'medium' ? '#eab308' : '#22c55e';
         
         const el = document.createElement('div');
