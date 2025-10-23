@@ -59,7 +59,32 @@ export const AIChatPanel = ({ markers, onAddMarker, onMoveMarker }: AIChatPanelP
 
       if (error) throw error;
 
-      if (data.action === "add" && data.marker) {
+      if (data.action === "search_and_add" && data.markers && Array.isArray(data.markers)) {
+        // إضافة عدة علامات من نتائج البحث
+        data.markers.forEach((marker: any) => {
+          const newMarker: Omit<MarkerData, 'id'> = {
+            name_ar: marker.name || "علامة جديدة",
+            type: marker.type || "military",
+            subtype: marker.subtype || "",
+            description_ar: marker.description || "",
+            icon: marker.icon || "🎯",
+            lat: marker.coordinates[1],
+            lng: marker.coordinates[0],
+            severity: marker.severity || "medium"
+          };
+          onAddMarker(newMarker);
+        });
+        
+        const responseMessage = `${data.summary || ""}\n\n${data.message || `تم إضافة ${data.markers.length} علامة بنجاح ✓`}`;
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: responseMessage
+        }]);
+        toast({
+          title: "تم إضافة العلامات",
+          description: `تم إضافة ${data.markers.length} علامة من نتائج البحث`,
+        });
+      } else if (data.action === "add" && data.marker) {
         const newMarker: Omit<MarkerData, 'id'> = {
           name_ar: data.marker.name || "علامة جديدة",
           type: data.marker.type || "military",
@@ -146,9 +171,10 @@ export const AIChatPanel = ({ markers, onAddMarker, onMoveMarker }: AIChatPanelP
             <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>مرحباً! يمكنني مساعدتك في:</p>
             <ul className="mt-2 text-right space-y-1">
-              <li>• إضافة علامات جديدة على الخريطة</li>
-              <li>• تحريك العلامات الموجودة</li>
-              <li>• إدارة الأيقونات العسكرية</li>
+              <li>• البحث عن أحداث عسكرية وبحرية</li>
+              <li>• تلخيص المعلومات والأحداث المهمة</li>
+              <li>• إضافة علامات تلقائياً من نتائج البحث</li>
+              <li>• إدارة وتحريك العلامات الموجودة</li>
             </ul>
           </div>
         )}
