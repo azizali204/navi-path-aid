@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { FileImage, Presentation, Globe, Box } from "lucide-react";
+import { FileImage, Presentation, Globe, Box, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { MilitarySymbolIcons } from "@/components/military/MilitarySymbolIcons";
+import { AreaSelector } from "@/components/military/AreaSelector";
 import mapboxgl from "mapbox-gl";
 import pptxgen from "pptxgenjs";
 import * as THREE from 'three';
@@ -29,6 +30,8 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   const { toast } = useToast();
   const iconCache = useRef<Record<string, HTMLImageElement>>({});
   const customIconCache = useRef<Record<string, HTMLImageElement>>({});
+  const [isSelectingArea, setIsSelectingArea] = useState(false);
+  const [selectedBounds, setSelectedBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
 
   const getSeverityColor = (sev?: string) => {
     switch (sev) {
@@ -97,20 +100,33 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: markers.length > 0 ? "يتم إنشاء صورة خريطة العالم 2D مع جميع الرموز" : "يتم إنشاء صورة خريطة العالم 2D",
+        description: selectedBounds ? "يتم تصدير المنطقة المحددة" : "يتم إنشاء صورة الخريطة",
       });
 
-      // ضبط الخريطة لعرض العالم كاملاً 2D بشكل مسطح تماماً
-      map.setPitch(0); // تأكيد أن الخريطة مسطحة 100%
-      map.setBearing(0); // بدون دوران
-      map.flyTo({
-        center: [0, 20], // مركز العالم
-        zoom: 1.5, // زوم لعرض العالم كاملاً
-        pitch: 0, // بدون ميل (2D مسطح تماماً)
-        bearing: 0, // بدون دوران
-        duration: 0,
-        animate: false
-      });
+      // ضبط الخريطة حسب المنطقة المحددة أو عرض كامل
+      map.setPitch(0);
+      map.setBearing(0);
+      
+      if (selectedBounds) {
+        // Fit to selected bounds
+        map.fitBounds([
+          [selectedBounds.west, selectedBounds.south],
+          [selectedBounds.east, selectedBounds.north]
+        ], {
+          padding: 20,
+          duration: 0,
+          animate: false
+        });
+      } else {
+        map.flyTo({
+          center: [0, 20],
+          zoom: 1.5,
+          pitch: 0,
+          bearing: 0,
+          duration: 0,
+          animate: false
+        });
+      }
 
       // انتظار استقرار الخريطة
       await new Promise<void>((resolve) => {
@@ -144,10 +160,27 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         const cssWidth = container.clientWidth || baseCanvas.width;
         const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
-        const iconSizeCss = 32;
-        const iconSize = iconSizeCss * ratio;
-        const ringRadius = 20 * ratio;
-        const ringFillRadius = 18 * ratio;
+        const dotRadius = 6 * ratio;
+        const borderWidth = 2 * ratio;
+
+        // تحديد لون النقطة بناءً على النوع
+        const getColorForType = (type: string): string => {
+          const colorMap: Record<string, string> = {
+            'ship': '#3b82f6',
+            'submarine': '#6366f1',
+            'naval_base': '#ef4444',
+            'port': '#10b981',
+            'defensive_line': '#f59e0b',
+            'watchtower': '#8b5cf6',
+            'navigation_buoy': '#06b6d4',
+            'restricted_zone': '#dc2626',
+            'anchor_point': '#14b8a6',
+            'helipad': '#f97316',
+            'minefield': '#b91c1c',
+            'barracks': '#84cc16'
+          };
+          return colorMap[type] || '#6b7280';
+        };
 
         for (const marker of markers) {
           try {
@@ -159,30 +192,35 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
               continue;
             }
 
+            const markerColor = getColorForType(marker.type);
+
+            // رسم النقطة الملونة
             ctx.beginPath();
-            ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = markerColor;
             ctx.fill();
 
+            // رسم الحدود البيضاء
             ctx.beginPath();
-            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-            ctx.lineWidth = 3 * ratio;
-            ctx.strokeStyle = getSeverityColor(marker.severity);
-            ctx.shadowBlur = 10 * ratio;
-            ctx.shadowColor = getSeverityColor(marker.severity);
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.lineWidth = borderWidth;
+            ctx.strokeStyle = '#ffffff';
             ctx.stroke();
-            ctx.shadowBlur = 0;
 
-            const iconImage = await getIconForMarker(marker);
-            ctx.drawImage(
-              iconImage,
-              x - iconSize / 2,
-              y - iconSize / 2,
-              iconSize,
-              iconSize
-            );
+            // إضافة ظل خفيف
+            ctx.shadowBlur = 4 * ratio;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowOffsetY = 2 * ratio;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = markerColor;
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
           } catch (error) {
-            console.error('خطأ في رسم الأيقونة:', marker.id, error);
+            console.error('خطأ في رسم النقطة:', marker.id, error);
           }
         }
       }
@@ -311,10 +349,27 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
         const cssWidth = container.clientWidth || baseCanvas.width;
         const ratio = (baseCanvas.width / cssWidth) * scaleFactor;
 
-        const iconSizeCss = 32;
-        const iconSize = iconSizeCss * ratio;
-        const ringRadius = 20 * ratio;
-        const ringFillRadius = 18 * ratio;
+        const dotRadius = 6 * ratio;
+        const borderWidth = 2 * ratio;
+
+        // تحديد لون النقطة بناءً على النوع
+        const getColorForType = (type: string): string => {
+          const colorMap: Record<string, string> = {
+            'ship': '#3b82f6',
+            'submarine': '#6366f1',
+            'naval_base': '#ef4444',
+            'port': '#10b981',
+            'defensive_line': '#f59e0b',
+            'watchtower': '#8b5cf6',
+            'navigation_buoy': '#06b6d4',
+            'restricted_zone': '#dc2626',
+            'anchor_point': '#14b8a6',
+            'helipad': '#f97316',
+            'minefield': '#b91c1c',
+            'barracks': '#84cc16'
+          };
+          return colorMap[type] || '#6b7280';
+        };
 
         for (const marker of markers) {
           try {
@@ -326,30 +381,35 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
               continue;
             }
 
+            const markerColor = getColorForType(marker.type);
+
+            // رسم النقطة الملونة
             ctx.beginPath();
-            ctx.arc(x, y, ringFillRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(37, 99, 235, 0.13)';
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = markerColor;
             ctx.fill();
 
+            // رسم الحدود البيضاء
             ctx.beginPath();
-            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-            ctx.lineWidth = 3 * ratio;
-            ctx.strokeStyle = getSeverityColor(marker.severity);
-            ctx.shadowBlur = 10 * ratio;
-            ctx.shadowColor = getSeverityColor(marker.severity);
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.lineWidth = borderWidth;
+            ctx.strokeStyle = '#ffffff';
             ctx.stroke();
-            ctx.shadowBlur = 0;
 
-            const iconImage = await getIconForMarker(marker);
-            ctx.drawImage(
-              iconImage,
-              x - iconSize / 2,
-              y - iconSize / 2,
-              iconSize,
-              iconSize
-            );
+            // إضافة ظل خفيف
+            ctx.shadowBlur = 4 * ratio;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowOffsetY = 2 * ratio;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = markerColor;
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
           } catch (error) {
-            console.error('خطأ في رسم الأيقونة:', marker.id, error);
+            console.error('خطأ في رسم النقطة:', marker.id, error);
           }
         }
       }
@@ -793,17 +853,61 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
 
   return (
-    <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
-        onClick={exportPNG}
-        disabled={!map}
-      >
-        <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        PNG (2D مسطح)
-      </Button>
+    <>
+      {isSelectingArea && (
+        <AreaSelector
+          map={map}
+          onAreaSelected={(bounds) => {
+            setSelectedBounds(bounds);
+            setIsSelectingArea(false);
+            toast({
+              title: "تم تحديد المنطقة",
+              description: "يمكنك الآن تصدير المنطقة المحددة",
+            });
+          }}
+          onCancel={() => setIsSelectingArea(false)}
+        />
+      )}
+      
+      <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
+        <Button
+          variant={selectedBounds ? "default" : "outline"}
+          size="sm"
+          className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+          onClick={() => setIsSelectingArea(true)}
+          disabled={!map}
+        >
+          <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          {selectedBounds ? "تغيير المنطقة" : "تحديد منطقة"}
+        </Button>
+
+        {selectedBounds && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+            onClick={() => {
+              setSelectedBounds(null);
+              toast({
+                title: "تم إلغاء التحديد",
+                description: "سيتم تصدير الخريطة كاملة",
+              });
+            }}
+          >
+            إلغاء التحديد
+          </Button>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
+          onClick={exportPNG}
+          disabled={!map}
+        >
+          <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          PNG {selectedBounds ? "(منطقة محددة)" : "(2D مسطح)"}
+        </Button>
 
       <Button
         variant="outline"
@@ -845,6 +949,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
           أضف نقاطاً للتصدير
         </p>
       )}
-    </div>
+      </div>
+    </>
   );
 };

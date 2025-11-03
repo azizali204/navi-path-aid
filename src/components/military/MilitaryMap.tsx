@@ -6,6 +6,7 @@ import { MapSidebar } from "./MapSidebar";
 import { AddMarkerDialog } from "./AddMarkerDialog";
 import { NewsEventMarkersMapbox } from "./NewsEventMarkersMapbox";
 import { CoordinateDisplay } from "./CoordinateDisplay";
+import { MapLegend } from "./MapLegend";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -833,46 +834,40 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           markersRef.current[type] = [];
         }
 
-        // استخدام رموز NATO العسكرية
-        let iconHtml: string;
-        const natoSymbol = getSymbolByType(markerData.type, markerData.severity);
+        // تحديد لون النقطة بناءً على النوع
+        const getColorForType = (type: string): string => {
+          const colorMap: Record<string, string> = {
+            'ship': '#3b82f6',
+            'submarine': '#6366f1',
+            'naval_base': '#ef4444',
+            'port': '#10b981',
+            'defensive_line': '#f59e0b',
+            'watchtower': '#8b5cf6',
+            'navigation_buoy': '#06b6d4',
+            'restricted_zone': '#dc2626',
+            'anchor_point': '#14b8a6',
+            'helipad': '#f97316',
+            'minefield': '#b91c1c',
+            'barracks': '#84cc16'
+          };
+          return colorMap[type] || '#6b7280';
+        };
         
-        if (natoSymbol) {
-          // استخدام رمز NATO
-          iconHtml = `<img src="${natoSymbol}" style="width: 100%; height: 100%; object-fit: contain;" />`;
-        } else if (markerData.icon.startsWith('custom_')) {
-          // استخدام أيقونة مخصصة
-          const customIcons = JSON.parse(localStorage.getItem('customIcons') || '[]');
-          const customIcon = customIcons.find((icon: any) => icon.id === markerData.icon);
-          if (customIcon) {
-            iconHtml = `<img src="${customIcon.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;" />`;
-          } else {
-            iconHtml = MilitarySymbolIcons.default;
-          }
-        } else {
-          // استخدام أيقونة عادية
-          iconHtml = MilitarySymbolIcons[markerData.icon as keyof typeof MilitarySymbolIcons] || MilitarySymbolIcons.default;
-        }
-        
-        const severityColor = markerData.severity === 'high' ? '#ef4444' : markerData.severity === 'medium' ? '#eab308' : '#22c55e';
+        const markerColor = getColorForType(markerData.type);
         
         const el = document.createElement('div');
         el.className = 'marker-container';
         el.innerHTML = `
           <div style="
-            width: 40px;
-            height: 40px;
-            border: 3px solid ${severityColor};
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
             border-radius: 50%;
-            background: #2563eb22;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: ${markerColor};
             cursor: pointer;
-            box-shadow: 0 0 10px ${severityColor}44;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             transition: transform 0.2s;
-          " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            ${iconHtml}
+          " onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">
           </div>
         `;
 
@@ -1246,6 +1241,8 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         />
 
         <NewsEventMarkersMapbox events={newsEvents} map={map.current} />
+        
+        <MapLegend />
 
       {/* زر إظهار/إخفاء القائمة الجانبية - مخفي على الموبايل */}
       <button
