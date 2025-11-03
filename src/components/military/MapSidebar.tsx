@@ -16,14 +16,13 @@ import {
   MapPin,
   Pencil,
   Trash2,
-  Download,
   Menu,
   Bot,
-  Send
+  Send,
+  LogOut
 } from "lucide-react";
 import { IconLabelsAr, CategoryLabelsAr, IconCategories } from "./MilitarySymbolIcons";
 import { MarkersTable } from "./MarkersTable";
-import { ExportPanel } from "./ExportPanel";
 import { NewsEventsPanel } from "@/components/maritime/NewsEventsPanel";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,6 +60,7 @@ interface MapSidebarProps {
   map: any;
   onNewsEventsFound?: (events: any[]) => void;
   onAddMarkerFromAI?: (marker: Omit<MarkerData, 'id'>) => void;
+  onLogout?: () => void;
 }
 
 export const MapSidebar = ({
@@ -77,6 +77,7 @@ export const MapSidebar = ({
   map,
   onNewsEventsFound,
   onAddMarkerFromAI,
+  onLogout,
 }: MapSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -440,14 +441,20 @@ export const MapSidebar = ({
             </>
           )}
 
-          {/* التصدير */}
-          <div>
-            <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2">
-              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              التصدير
-            </h3>
-            <ExportPanel markers={customMarkers} map={map} />
-          </div>
+          {/* تسجيل الخروج */}
+          {onLogout && (
+            <div>
+              <Button 
+                onClick={onLogout}
+                variant="destructive"
+                className="w-full flex items-center justify-center gap-2"
+                size="sm"
+              >
+                <LogOut className="w-4 h-4" />
+                تسجيل الخروج
+              </Button>
+            </div>
+          )}
         </div>
       </ScrollArea>
     </>

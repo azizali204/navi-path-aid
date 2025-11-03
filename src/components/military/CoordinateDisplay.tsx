@@ -19,24 +19,24 @@ export const CoordinateDisplay = ({ lat, lng, depth }: CoordinateDisplayProps) =
   };
 
   return (
-    <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-[#001a33]/95 backdrop-blur-sm shadow-lg border-[#0066cc]/30" dir="rtl">
-      <div className="flex items-center gap-4 px-4 py-2.5 text-sm">
+    <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-transparent backdrop-blur-sm shadow-sm border-[#0066cc]/20" dir="rtl">
+      <div className="flex items-center gap-3 px-3 py-1.5 text-xs">
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-[#66b3ff]" />
-          <div className="flex gap-3">
-            <div className="font-mono text-xs text-white">{formatCoordinate(lat, true)}</div>
-            <div className="font-mono text-xs text-white">{formatCoordinate(lng, false)}</div>
+          <MapPin className="w-3 h-3 text-[#66b3ff]" />
+          <div className="flex gap-2">
+            <div className="font-mono text-[10px] text-white/90">{formatCoordinate(lat, true)}</div>
+            <div className="font-mono text-[10px] text-white/90">{formatCoordinate(lng, false)}</div>
           </div>
         </div>
         
         {depth !== undefined && (
           <>
-            <div className="h-6 w-px bg-[#0066cc]/50" />
-            <div className="flex items-center gap-2 bg-[#0066cc]/20 px-3 py-1 rounded">
-              <Compass className="w-4 h-4 text-[#66b3ff]" />
+            <div className="h-4 w-px bg-[#0066cc]/30" />
+            <div className="flex items-center gap-1.5 bg-[#0066cc]/10 px-2 py-0.5 rounded">
+              <Compass className="w-3 h-3 text-[#66b3ff]" />
               <div className="flex items-baseline gap-1">
-                <span className="font-mono text-base font-bold text-white">{depth > 0 ? depth : '--'}</span>
-                <span className="text-xs text-[#66b3ff]">متر</span>
+                <span className="font-mono text-sm font-bold text-white/90">{depth > 0 ? depth : '--'}</span>
+                <span className="text-[10px] text-[#66b3ff]/80">متر</span>
               </div>
             </div>
           </>

@@ -1185,6 +1185,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           map={map.current}
           onNewsEventsFound={setNewsEvents}
           onAddMarkerFromAI={handleSaveMarker}
+          onLogout={onLogout}
         />
       </div>
 
@@ -1204,6 +1205,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           map={map.current}
           onNewsEventsFound={setNewsEvents}
           onAddMarkerFromAI={handleSaveMarker}
+          onLogout={onLogout}
         />
       </div>
 
