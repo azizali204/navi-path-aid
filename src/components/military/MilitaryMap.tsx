@@ -134,7 +134,25 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11', // Light base for nautical charts
+        style: {
+          version: 8,
+          sources: {
+            'osm-tiles': {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '© OpenStreetMap contributors'
+            }
+          },
+          layers: [
+            {
+              id: 'osm-layer',
+              type: 'raster',
+              source: 'osm-tiles',
+              paint: { 'raster-opacity': 1 }
+            }
+          ]
+        },
         center,
         zoom,
         pitch: 0,
@@ -263,12 +281,10 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       });
 
       map.current.on('load', () => {
-        // Apply ENC-style nautical chart styling
-        applyNauticalChartStyle();
-        // Add bathymetric depth contours and shading
-        addBathymetryLayer();
-        // Add OpenSeaMap for navigation aids
+        // Add OpenSeaMap as primary layer
         addOpenSeaMapLayer();
+        // Add bathymetric depth contours
+        addBathymetryLayer();
         // Add depth labels layer
         addDepthLabelsLayer();
         // Add maritime navigation markers
@@ -334,7 +350,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
           type: 'raster',
           source: 'openseamap',
           paint: {
-            'raster-opacity': 0.85
+            'raster-opacity': 1 // Full opacity as primary layer
           }
         });
       }
