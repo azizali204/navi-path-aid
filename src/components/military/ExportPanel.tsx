@@ -81,7 +81,7 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
 
 
 
-  const exportPNG = async () => {
+  const exportPNG = async (customBounds?: { north: number; south: number; east: number; west: number }) => {
     if (!map) {
       toast({
         title: "خطأ",
@@ -90,6 +90,8 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       });
       return;
     }
+
+    const boundsToUse = customBounds || selectedBounds;
 
     // حفظ العرض الحالي
     const originalCenter = map.getCenter();
@@ -100,18 +102,18 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
     try {
       toast({
         title: "جاري التصدير...",
-        description: selectedBounds ? "يتم تصدير المنطقة المحددة" : "يتم إنشاء صورة الخريطة",
+        description: boundsToUse ? "يتم تصدير المنطقة المحددة" : "يتم إنشاء صورة الخريطة",
       });
 
       // ضبط الخريطة حسب المنطقة المحددة أو عرض كامل
       map.setPitch(0);
       map.setBearing(0);
       
-      if (selectedBounds) {
+      if (boundsToUse) {
         // Fit to selected bounds
         map.fitBounds([
-          [selectedBounds.west, selectedBounds.south],
-          [selectedBounds.east, selectedBounds.north]
+          [boundsToUse.west, boundsToUse.south],
+          [boundsToUse.east, boundsToUse.north]
         ], {
           padding: 20,
           duration: 0,
@@ -852,18 +854,20 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   };
 
 
+  const handleExportClick = () => {
+    if (!map) return;
+    setIsSelectingArea(true);
+  };
+
   return (
     <>
       {isSelectingArea && (
         <AreaSelector
           map={map}
           onAreaSelected={(bounds) => {
-            setSelectedBounds(bounds);
             setIsSelectingArea(false);
-            toast({
-              title: "تم تحديد المنطقة",
-              description: "يمكنك الآن تصدير المنطقة المحددة",
-            });
+            // تصدير مباشرة بعد التحديد مع تمرير المنطقة
+            exportPNG(bounds);
           }}
           onCancel={() => setIsSelectingArea(false)}
         />
@@ -871,42 +875,14 @@ export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
       
       <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
         <Button
-          variant={selectedBounds ? "default" : "outline"}
-          size="sm"
-          className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
-          onClick={() => setIsSelectingArea(true)}
-          disabled={!map}
-        >
-          <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          {selectedBounds ? "تغيير المنطقة" : "تحديد منطقة"}
-        </Button>
-
-        {selectedBounds && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
-            onClick={() => {
-              setSelectedBounds(null);
-              toast({
-                title: "تم إلغاء التحديد",
-                description: "سيتم تصدير الخريطة كاملة",
-              });
-            }}
-          >
-            إلغاء التحديد
-          </Button>
-        )}
-
-        <Button
           variant="outline"
           size="sm"
           className="gap-1.5 sm:gap-2 justify-start h-8 sm:h-9 text-xs sm:text-sm"
-          onClick={exportPNG}
+          onClick={handleExportClick}
           disabled={!map}
         >
           <FileImage className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          PNG {selectedBounds ? "(منطقة محددة)" : "(2D مسطح)"}
+          PNG (تحديد منطقة)
         </Button>
 
       <Button

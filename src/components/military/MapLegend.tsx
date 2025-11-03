@@ -19,25 +19,23 @@ const legendItems = [
 
 export const MapLegend = () => {
   return (
-    <Card className="fixed bottom-20 right-4 z-[1500] p-3 sm:p-4 w-56 sm:w-64 bg-card/95 backdrop-blur shadow-xl border-2" dir="rtl">
-      <h3 className="font-bold text-sm sm:text-lg mb-2 sm:mb-3 text-foreground">مفتاح الخريطة</h3>
-      <div className="space-y-1.5 sm:space-y-2 max-h-[300px] overflow-y-auto">
+    <div className="fixed bottom-20 right-4 z-[1500] p-2 sm:p-3 backdrop-blur-sm bg-black/20 rounded-lg border border-white/20" dir="rtl">
+      <h3 className="font-bold text-xs sm:text-sm mb-1.5 sm:mb-2 text-white drop-shadow-lg">مفتاح الخريطة</h3>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
         {legendItems.map((item) => {
           const IconComponent = item.icon;
           return (
-            <div key={item.type} className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white shadow-sm flex-shrink-0"
-                  style={{ backgroundColor: item.color }}
-                />
-                <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: item.color }} />
-              </div>
-              <span className="text-xs sm:text-sm text-foreground">{item.label}</span>
+            <div key={item.type} className="flex items-center gap-1.5">
+              <div 
+                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white shadow-sm flex-shrink-0"
+                style={{ backgroundColor: item.color }}
+              />
+              <IconComponent className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" style={{ color: item.color }} />
+              <span className="text-[10px] sm:text-xs text-white drop-shadow">{item.label}</span>
             </div>
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 };
