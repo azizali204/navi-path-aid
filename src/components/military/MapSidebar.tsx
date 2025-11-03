@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,9 @@ import {
   Pencil,
   Trash2,
   Download,
-  Menu
+  Menu,
+  Bot,
+  Send
 } from "lucide-react";
 import { IconLabelsAr, CategoryLabelsAr, IconCategories } from "./MilitarySymbolIcons";
 import { MarkersTable } from "./MarkersTable";
@@ -25,6 +27,8 @@ import { ExportPanel } from "./ExportPanel";
 import { NewsEventsPanel } from "@/components/maritime/NewsEventsPanel";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MarkerData {
   id: number;
@@ -36,6 +40,11 @@ interface MarkerData {
   lat: number;
   lng: number;
   severity?: 'low' | 'medium' | 'high';
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
 }
 
 interface MapSidebarProps {
@@ -51,6 +60,7 @@ interface MapSidebarProps {
   onSearch: (term: string) => void;
   map: any;
   onNewsEventsFound?: (events: any[]) => void;
+  onAddMarkerFromAI?: (marker: Omit<MarkerData, 'id'>) => void;
 }
 
 export const MapSidebar = ({
@@ -66,14 +76,106 @@ export const MapSidebar = ({
   onSearch,
   map,
   onNewsEventsFound,
+  onAddMarkerFromAI,
 }: MapSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  
+  // AI Chat States
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const getCategoryCount = (category: string) => {
     const types = IconCategories[category as keyof typeof IconCategories] || [];
     return customMarkers.filter(m => types.includes(m.icon)).length;
+  };
+
+  const handleAiSend = async () => {
+    if (!aiInput.trim() || isAiLoading) return;
+
+    const userMessage = aiInput.trim();
+    setAiInput("");
+    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    setIsAiLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('map-ai-chat', {
+        body: { message: userMessage, markers: customMarkers }
+      });
+
+      if (error) throw error;
+
+      if (data.action === "search_and_add" && data.markers && Array.isArray(data.markers)) {
+        data.markers.forEach((marker: any) => {
+          const newMarker: Omit<MarkerData, 'id'> = {
+            name_ar: marker.name || "علامة جديدة",
+            type: marker.type || "military",
+            subtype: marker.subtype || "",
+            description_ar: marker.description || "",
+            icon: marker.icon || "🎯",
+            lat: marker.coordinates[1],
+            lng: marker.coordinates[0],
+            severity: marker.severity || "medium"
+          };
+          onAddMarkerFromAI?.(newMarker);
+        });
+        
+        const responseMessage = `${data.summary || ""}\n\n${data.message || `تم إضافة ${data.markers.length} علامة بنجاح ✓`}`;
+        setMessages(prev => [...prev, { role: "assistant", content: responseMessage }]);
+        toast({
+          title: "تم إضافة العلامات",
+          description: `تم إضافة ${data.markers.length} علامة من نتائج البحث`,
+        });
+      } else if (data.action === "add" && data.marker) {
+        const newMarker: Omit<MarkerData, 'id'> = {
+          name_ar: data.marker.name || "علامة جديدة",
+          type: data.marker.type || "military",
+          subtype: data.marker.subtype || "",
+          description_ar: data.marker.description || "",
+          icon: data.marker.icon || "🎯",
+          lat: data.marker.coordinates[1],
+          lng: data.marker.coordinates[0],
+          severity: data.marker.severity || "medium"
+        };
+        onAddMarkerFromAI?.(newMarker);
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: data.message || "تم إضافة العلامة بنجاح ✓" 
+        }]);
+        toast({
+          title: "تم إضافة العلامة",
+          description: data.message,
+        });
+      } else if (data.message) {
+        setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
+      } else if (data.error) {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      console.error('Error calling AI:', error);
+      const errorMessage = error.message || "حدث خطأ في الاتصال بالذكاء الاصطناعي";
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: `عذراً، ${errorMessage}` 
+      }]);
+      toast({
+        title: "خطأ",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const SidebarContent = () => (
@@ -241,6 +343,86 @@ export const MapSidebar = ({
                 )}
               </div>
             )}
+          </div>
+
+          <Separator />
+
+          {/* المساعد الذكي */}
+          <div>
+            <h3 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+              <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              المساعد الذكي
+            </h3>
+            
+            <div className="bg-muted rounded-lg p-2 sm:p-3">
+              <ScrollArea className="h-48 sm:h-64 mb-2 sm:mb-3" ref={scrollRef}>
+                {messages.length === 0 && (
+                  <div className="text-center text-muted-foreground text-[10px] sm:text-xs py-4">
+                    <Bot className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="mb-1">يمكنني مساعدتك في:</p>
+                    <ul className="space-y-0.5 text-right">
+                      <li>• البحث عن أحداث عسكرية وبحرية</li>
+                      <li>• تلخيص المعلومات والأحداث</li>
+                      <li>• إضافة علامات من نتائج البحث</li>
+                    </ul>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex ${msg.role === "user" ? "justify-start" : "justify-end"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-lg p-2 ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background"
+                        }`}
+                      >
+                        <p className="text-[10px] sm:text-xs whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isAiLoading && (
+                    <div className="flex justify-end">
+                      <div className="bg-background rounded-lg p-2">
+                        <div className="flex gap-1">
+                          <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" />
+                          <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce delay-100" />
+                          <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce delay-200" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAiSend();
+                }}
+                className="flex gap-1"
+              >
+                <Input
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  placeholder="اسأل المساعد الذكي..."
+                  disabled={isAiLoading}
+                  className="text-right h-8 text-xs"
+                  dir="rtl"
+                />
+                <Button 
+                  type="submit" 
+                  size="icon" 
+                  disabled={isAiLoading || !aiInput.trim()}
+                  className="h-8 w-8"
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
+              </form>
+            </div>
           </div>
 
           <Separator />
