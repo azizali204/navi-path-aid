@@ -23,11 +23,16 @@ interface ExportPanelProps {
 export const ExportPanel = ({ markers, map }: ExportPanelProps) => {
   const { toast } = useToast();
 
-
-
-
-
   const exportPNG = async () => {
+    if (!map) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       toast({
         title: "جاري التصدير...",
