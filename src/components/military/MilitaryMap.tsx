@@ -69,8 +69,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   const [editingMarker, setEditingMarker] = useState<MarkerData | null>(null);
   const [pickingCoordinates, setPickingCoordinates] = useState(false);
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
-  const [mapStyle, setMapStyle] = useState<string>('mapbox://styles/mapbox/outdoors-v12');
-  const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
   const [mouseCoords, setMouseCoords] = useState({ lat: 15, lng: 42 });
   const [currentDepth, setCurrentDepth] = useState<number | undefined>(undefined);
@@ -1115,26 +1113,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     }
   };
 
-  const changeMapStyle = (style: string) => {
-    if (map.current) {
-      map.current.setStyle(style);
-      setMapStyle(style);
-      
-      // إعادة رسم النقاط وإضافة طبقة OpenSeaMap بعد تحميل النمط الجديد
-      map.current.once('style.load', () => {
-        // إعادة إضافة طبقات التراكب
-        addOpenSeaMapLayer();
-        addBathymetryLayer();
-        renderMarkers([], customMarkers);
-      });
-      
-      toast({
-        title: "تم تغيير نمط الخريطة",
-        description: "تم تطبيق النمط الجديد بنجاح",
-      });
-    }
-  };
-
   const handlePickCoordinates = () => {
     setPickingCoordinates(!pickingCoordinates);
     if (pickingCoordinates) {
@@ -1261,113 +1239,15 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
         <span className="hidden sm:inline">{sidebarOpen ? 'إخفاء' : 'إظهار'}</span>
       </button>
 
-      {/* عنصر تحكم نوع الخريطة */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-[10] flex gap-1 sm:gap-2">
-        <button
-          onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
-          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-accent transition-colors flex items-center gap-1 sm:gap-2"
-          title="تغيير نوع الخريطة"
-        >
-          <span className="text-base sm:text-lg">🗺️</span>
-          <span className="hidden sm:inline">نوع الخريطة</span>
-          <svg
-            className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${mapStyleMenuOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        
-        <button
-          onClick={onLogout}
-          className="bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-1 sm:gap-2"
-          title="تسجيل الخروج"
-        >
-          <span className="text-base sm:text-lg">🚪</span>
-          <span className="hidden sm:inline">خروج</span>
-        </button>
-      </div>
-      
-      {mapStyleMenuOpen && (
-        <div className="absolute top-[42px] sm:top-[52px] left-2 sm:left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg animate-fade-in max-w-[calc(100vw-2rem)] sm:max-w-none">
-          <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/outdoors-v12');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/outdoors-v12' ? 'bg-accent' : ''
-                  }`}
-                  title="ملاحة بحرية"
-                >
-                  ⚓ ملاحة بحرية
-                </button>
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/satellite-v9');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/satellite-v9' ? 'bg-accent' : ''
-                  }`}
-                  title="أقمار صناعية"
-                >
-                  🛰️ أقمار صناعية
-                </button>
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/satellite-streets-v12');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/satellite-streets-v12' ? 'bg-accent' : ''
-                  }`}
-                  title="أقمار صناعية + شوارع"
-                >
-                  🗺️ مختلط
-                </button>
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/streets-v12');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/streets-v12' ? 'bg-accent' : ''
-                  }`}
-                  title="شوارع"
-                >
-                  📍 شوارع
-                </button>
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/dark-v11');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/dark-v11' ? 'bg-accent' : ''
-                  }`}
-                  title="داكن"
-                >
-                  🌙 داكن
-                </button>
-                <button
-                  onClick={() => {
-                    changeMapStyle('mapbox://styles/mapbox/light-v11');
-                    setMapStyleMenuOpen(false);
-                  }}
-                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded hover:bg-accent transition-colors text-right ${
-                    mapStyle === 'mapbox://styles/mapbox/light-v11' ? 'bg-accent' : ''
-                  }`}
-                  title="فاتح"
-                >
-                  ☀️ فاتح
-                </button>
-          </div>
-        </div>
-      )}
+      {/* زر تسجيل الخروج */}
+      <button
+        onClick={onLogout}
+        className="absolute top-2 sm:top-4 left-2 sm:left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-1 sm:gap-2"
+        title="تسجيل الخروج"
+      >
+        <span className="text-base sm:text-lg">🚪</span>
+        <span className="hidden sm:inline">خروج</span>
+      </button>
 
       {/* شريط الإحداثيات - تم إزالته لصالح CoordinateDisplay الجديد */}
       </div>
