@@ -6,7 +6,6 @@ import { MapSidebar } from "./MapSidebar";
 import { AddMarkerDialog } from "./AddMarkerDialog";
 import { NewsEventMarkersMapbox } from "./NewsEventMarkersMapbox";
 import { AIChatPanel } from "./AIChatPanel";
-import { LayerControl } from "./LayerControl";
 import { CoordinateDisplay } from "./CoordinateDisplay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -773,40 +772,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
     };
   };
 
-  const handleLayerChange = (layerId: string, enabled: boolean) => {
-    if (!map.current) return;
-
-    const layerMap: Record<string, string> = {
-      navigation: 'openseamap-layer',
-      depthLabels: 'depth-labels-layer',
-      contours: 'depth-contours-layer',
-      lighthouses: 'lighthouses-layer',
-      buoys: 'buoys-layer',
-      ports: 'ports-layer',
-    };
-
-    const actualLayerId = layerMap[layerId];
-    if (actualLayerId && map.current.getLayer(actualLayerId)) {
-      if (['depthLabels', 'contours', 'lighthouses', 'buoys', 'ports'].includes(layerId)) {
-        map.current.setLayoutProperty(
-          actualLayerId,
-          'visibility',
-          enabled ? 'visible' : 'none'
-        );
-      } else {
-        map.current.setPaintProperty(
-          actualLayerId,
-          'raster-opacity',
-          enabled ? 0.85 : 0
-        );
-      }
-    }
-  };
-
-  const handleBaseMapChange = (style: string) => {
-    changeMapStyle(style);
-  };
-
   // تحديث العرض عند تغيير النقاط المخصصة
   useEffect(() => {
     if (map.current && isMapReady) {
@@ -1227,7 +1192,7 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
   }
 
   return (
-    <div className="relative h-screen w-full flex" dir="rtl">
+    <div className="relative h-screen w-full flex flex-row-reverse" dir="rtl">
       {/* القائمة الجانبية - مخفية على الموبايل */}
       <div 
         className={`hidden md:block transition-all duration-300 ease-in-out ${
@@ -1272,13 +1237,6 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       <div className="flex-1 relative">
         <div ref={mapContainer} className="absolute inset-0" />
         
-        {/* Layer Control */}
-        <LayerControl
-          onLayerChange={handleLayerChange}
-          onBaseMapChange={handleBaseMapChange}
-          currentBaseMap={mapStyle}
-        />
-
         {/* Coordinate Display */}
         <CoordinateDisplay 
           lat={mouseCoords.lat} 
@@ -1306,11 +1264,11 @@ export const MilitaryMap = ({ onLogout }: MilitaryMapProps) => {
       {/* زر إظهار/إخفاء القائمة الجانبية - مخفي على الموبايل */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden md:flex absolute top-2 sm:top-4 right-2 sm:right-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-accent transition-colors items-center gap-1 sm:gap-2"
+        className="hidden md:flex absolute top-2 sm:top-4 left-2 sm:left-4 z-[10] bg-card/95 backdrop-blur rounded-lg border border-border shadow-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-accent transition-colors items-center gap-1 sm:gap-2"
         title={sidebarOpen ? "إخفاء لوحة التحكم" : "إظهار لوحة التحكم"}
       >
         <svg
-          className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`}
+          className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
