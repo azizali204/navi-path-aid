@@ -36,10 +36,53 @@ jobs:
           unzip -q /tmp/LumiVoiceBridge-v0.2-source.zip -d lumi-src
           mv lumi-src/LumiVoiceBridge-v0.2 lumi-src/app-project
 
-      - name: Apply build fix
+      - name: Apply v0.3 startup crash fixes
         run: |
+          # Fix the stray final brace present in the v0.2 source snapshot.
           sed -i '$d' lumi-src/app-project/app/src/main/java/com/az/lumivoice/HermesClient.kt
-          tail -5 lumi-src/app-project/app/src/main/java/com/az/lumivoice/HermesClient.kt
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('lumi-src/app-project')
+          main = root / 'app/src/main/java/com/az/lumivoice/MainActivity.kt'
+          s = main.read_text()
+
+          # Do not initialize SpeechRecognizer or TextToSpeech during app startup.
+          s = s.replace('private lateinit var voice: VoiceInput', 'private var voice: VoiceInput? = null')
+          s = s.replace('private lateinit var speaker: TtsSpeaker', 'private var speaker: TtsSpeaker? = null')
+          s = s.replace('        voice = VoiceInput(this)\n        speaker = TtsSpeaker(this)\n', '')
+
+          # Do not request microphone/notification permissions on launch; ask only when voice is used.
+          s = s.replace('        requestNeededPermissions()\n', '')
+
+          # Receiver registration should never crash launch on OEM-specific Android builds.
+          s = s.replace('        registerLumiReceiver()\n', '        runCatching { registerLumiReceiver() }\n')
+
+          # Lazy-create voice/TTS components only when the user actually uses them.
+          s = s.replace('            voice.start(\n', '            (voice ?: VoiceInput(applicationContext).also { voice = it }).start(\n')
+          s = s.replace('                if (prefs.speakReplies) speaker.speak(it.answer)\n', '                if (prefs.speakReplies) (speaker ?: TtsSpeaker(applicationContext).also { speaker = it }).speak(it.answer)\n')
+          s = s.replace('        voice.destroy()\n        speaker.shutdown()\n', '        voice?.destroy()\n        speaker?.shutdown()\n')
+          main.write_text(s)
+
+          # Treat stale/corrupt keystore data as empty instead of allowing startup failure.
+          secure = root / 'app/src/main/java/com/az/lumivoice/SecureStore.kt'
+          q = secure.read_text().replace('} catch (_: Exception) {\n            null\n', '} catch (_: Throwable) {\n            prefs.edit().remove(name).apply()\n            null\n')
+          secure.write_text(q)
+
+          # Explicit network security config and app version bump.
+          manifest = root / 'app/src/main/AndroidManifest.xml'
+          m = manifest.read_text()
+          if 'android:networkSecurityConfig' not in m:
+              m = m.replace('android:usesCleartextTraffic="false"', 'android:usesCleartextTraffic="false"\n        android:networkSecurityConfig="@xml/network_security_config"')
+          manifest.write_text(m)
+
+          gradle = root / 'app/build.gradle.kts'
+          g = gradle.read_text().replace('versionCode = 2', 'versionCode = 3').replace('versionName = "0.2.0"', 'versionName = "0.3.0"')
+          gradle.write_text(g)
+          PY
+
+          grep -n "voice\|speaker\|requestNeededPermissions\|registerLumiReceiver" lumi-src/app-project/app/src/main/java/com/az/lumivoice/MainActivity.kt | head -30
 
       - name: Build debug APK
         working-directory: lumi-src/app-project
@@ -47,15 +90,15 @@ jobs:
 
       - name: Prepare APK
         run: |
-          cp lumi-src/app-project/app/build/outputs/apk/debug/app-debug.apk LumiVoiceBridge-v0.2-debug.apk
-          sha256sum LumiVoiceBridge-v0.2-debug.apk > LumiVoiceBridge-v0.2-debug.apk.sha256
+          cp lumi-src/app-project/app/build/outputs/apk/debug/app-debug.apk LumiVoiceBridge-v0.3-debug.apk
+          sha256sum LumiVoiceBridge-v0.3-debug.apk > LumiVoiceBridge-v0.3-debug.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LumiVoiceBridge-v0.2-APK
+          name: LumiVoiceBridge-v0.3-APK
           path: |
-            LumiVoiceBridge-v0.2-debug.apk
-            LumiVoiceBridge-v0.2-debug.apk.sha256
+            LumiVoiceBridge-v0.3-debug.apk
+            LumiVoiceBridge-v0.3-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
