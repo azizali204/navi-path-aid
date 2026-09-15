@@ -1,0 +1,82 @@
+name: Build Lumi v0.6.1 APK
+
+on:
+  push:
+    branches: ["lumi-v061-build"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Reconstruct and extract v0.6 source
+        run: |
+          base64 -d lumi-build-v06/source.b64.txt > /tmp/LumiVoiceBridge-v0.6-source.zip
+          unzip -t /tmp/LumiVoiceBridge-v0.6-source.zip
+          rm -rf lumi-v061-src
+          mkdir lumi-v061-src
+          unzip -q /tmp/LumiVoiceBridge-v0.6-source.zip -d lumi-v061-src
+
+      - name: Extend speech silence timeout and bump version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('lumi-v061-src/LumiVoiceBridge-v0.6')
+          main = root / 'app/src/main/java/com/az/lumivoice/MainActivity.kt'
+          text = main.read_text(encoding='utf-8')
+
+          needle = 'putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")'
+          if needle not in text:
+              raise SystemExit('Could not find Arabic recognizer language setup; refusing to patch blindly.')
+
+          replacement = needle + '''\n            // Allow natural pauses before Android decides speech is finished.\n            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)\n            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)\n            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)'''
+          text = text.replace(needle, replacement, 1)
+          text = text.replace('v0.6', 'v0.6.1')
+          main.write_text(text, encoding='utf-8')
+
+          gradle = root / 'app/build.gradle.kts'
+          g = gradle.read_text(encoding='utf-8')
+          g = g.replace('versionCode = 6', 'versionCode = 7')
+          g = g.replace('versionName = "0.6.0"', 'versionName = "0.6.1"')
+          gradle.write_text(g, encoding='utf-8')
+          PY
+
+      - name: Build debug APK
+        working-directory: lumi-v061-src/LumiVoiceBridge-v0.6
+        run: gradle --no-daemon assembleDebug
+
+      - name: Prepare artifacts
+        run: |
+          cp lumi-v061-src/LumiVoiceBridge-v0.6/app/build/outputs/apk/debug/app-debug.apk LumiVoiceBridge-v0.6.1-debug.apk
+          (cd lumi-v061-src && zip -qr ../LumiVoiceBridge-v0.6.1-source.zip LumiVoiceBridge-v0.6)
+          sha256sum LumiVoiceBridge-v0.6.1-debug.apk > LumiVoiceBridge-v0.6.1-debug.apk.sha256
+          unzip -t LumiVoiceBridge-v0.6.1-source.zip
+
+      - name: Upload APK and source
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumiVoiceBridge-v0.6.1
+          path: |
+            LumiVoiceBridge-v0.6.1-debug.apk
+            LumiVoiceBridge-v0.6.1-debug.apk.sha256
+            LumiVoiceBridge-v0.6.1-source.zip
+          if-no-files-found: error
+          retention-days: 7
