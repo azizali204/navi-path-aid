@@ -1,0 +1,61 @@
+name: Build Lumi v1.0 Final APK
+
+on:
+  push:
+    branches: ["lumi-v10-final-build"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Reconstruct Lumi v1.0 source
+        run: |
+          rm -rf lumi-v10-src
+          chmod +x lumi-v10-final/setup-core.sh lumi-v10-final/setup-main.sh
+          lumi-v10-final/setup-core.sh lumi-v10-src
+          lumi-v10-final/setup-main.sh lumi-v10-src
+          test -f lumi-v10-src/app/src/main/res/drawable-nodpi/ic_launcher.png
+          grep -q 'إرسال إلى لومي' lumi-v10-src/app/src/main/java/com/az/lumivoice/MainActivity.kt
+          grep -q 'LumiBackgroundService' lumi-v10-src/app/src/main/AndroidManifest.xml
+
+      - name: Build debug APK
+        working-directory: lumi-v10-src
+        run: gradle --no-daemon assembleDebug
+
+      - name: Prepare artifacts
+        run: |
+          cp lumi-v10-src/app/build/outputs/apk/debug/app-debug.apk LumiVoiceBridge-v1.0-final-debug.apk
+          sha256sum LumiVoiceBridge-v1.0-final-debug.apk > LumiVoiceBridge-v1.0-final-debug.apk.sha256
+          rm -rf lumi-v10-src/app/build lumi-v10-src/.gradle
+          zip -qr LumiVoiceBridge-v1.0-final-source.zip lumi-v10-src
+          unzip -t LumiVoiceBridge-v1.0-final-source.zip >/dev/null
+          unzip -t LumiVoiceBridge-v1.0-final-debug.apk >/dev/null
+
+      - name: Upload APK and source
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumiVoiceBridge-v1.0-Final
+          path: |
+            LumiVoiceBridge-v1.0-final-debug.apk
+            LumiVoiceBridge-v1.0-final-debug.apk.sha256
+            LumiVoiceBridge-v1.0-final-source.zip
+          if-no-files-found: error
+          retention-days: 7
