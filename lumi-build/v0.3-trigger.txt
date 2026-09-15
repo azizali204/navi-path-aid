@@ -1,0 +1,1 @@
+Trigger Lumi v0.3 APK build after startup crash fixes.
