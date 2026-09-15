@@ -26,11 +26,14 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Extract Lumi source
+      - name: Reconstruct and extract Lumi source
         run: |
+          cat lumi-build/parts/part-* > /tmp/lumi.b64
+          base64 -d /tmp/lumi.b64 > /tmp/LumiVoiceBridge-v0.2-source.zip
+          unzip -t /tmp/LumiVoiceBridge-v0.2-source.zip
           rm -rf lumi-src
           mkdir lumi-src
-          unzip -q lumi-build/LumiVoiceBridge-v0.2-source.zip -d lumi-src
+          unzip -q /tmp/LumiVoiceBridge-v0.2-source.zip -d lumi-src
           mv lumi-src/LumiVoiceBridge-v0.2 lumi-src/app-project
 
       - name: Build debug APK
