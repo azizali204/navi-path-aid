@@ -1,0 +1,52 @@
+name: Build Lumi v0.4 Safe APK
+
+on:
+  push:
+    branches: ["lumi-v04-safe-build"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Extract source
+        run: |
+          rm -rf lumi-v04-src
+          mkdir lumi-v04-src
+          unzip -q lumi-build-v04/LumiVoiceBridge-v0.4-safe-source.zip -d lumi-v04-src
+
+      - name: Build debug APK
+        working-directory: lumi-v04-src/LumiVoiceBridge-v0.4-safe
+        run: gradle --no-daemon assembleDebug
+
+      - name: Prepare APK
+        run: |
+          cp lumi-v04-src/LumiVoiceBridge-v0.4-safe/app/build/outputs/apk/debug/app-debug.apk LumiVoiceBridge-v0.4-safe-debug.apk
+          sha256sum LumiVoiceBridge-v0.4-safe-debug.apk > LumiVoiceBridge-v0.4-safe-debug.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumiVoiceBridge-v0.4-safe-APK
+          path: |
+            LumiVoiceBridge-v0.4-safe-debug.apk
+            LumiVoiceBridge-v0.4-safe-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
