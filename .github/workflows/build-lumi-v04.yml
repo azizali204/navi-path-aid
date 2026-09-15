@@ -32,6 +32,40 @@ jobs:
           mkdir lumi-v04-src
           unzip -q lumi-build-v04/LumiVoiceBridge-v0.4-safe-source.zip -d lumi-v04-src
 
+      - name: Apply TTS compile fix
+        run: |
+          cat > lumi-v04-src/LumiVoiceBridge-v0.4-safe/app/src/main/java/com/az/lumivoice/TtsSpeaker.kt <<'EOF'
+          package com.az.lumivoice
+
+          import android.content.Context
+          import android.speech.tts.TextToSpeech
+          import java.util.Locale
+
+          class TtsSpeaker(context: Context) {
+              private var ready = false
+              private var engine: TextToSpeech? = null
+
+              init {
+                  engine = TextToSpeech(context.applicationContext) { status ->
+                      val tts = engine
+                      if (status == TextToSpeech.SUCCESS && tts != null) {
+                          ready = true
+                          tts.language = Locale("ar", "SA")
+                      }
+                  }
+              }
+
+              fun speak(text: String) {
+                  if (ready) engine?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "lumi")
+              }
+
+              fun shutdown() {
+                  engine?.shutdown()
+                  engine = null
+              }
+          }
+          EOF
+
       - name: Build debug APK
         working-directory: lumi-v04-src/LumiVoiceBridge-v0.4-safe
         run: gradle --no-daemon assembleDebug
