@@ -26,11 +26,13 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Extract source
+      - name: Reconstruct and extract source
         run: |
+          base64 -d lumi-build-v05/source.b64.txt > /tmp/LumiVoiceBridge-v0.5-source.zip
+          unzip -t /tmp/LumiVoiceBridge-v0.5-source.zip
           rm -rf lumi-v05-src
           mkdir lumi-v05-src
-          unzip -q lumi-build-v05/LumiVoiceBridge-v0.5-source.zip -d lumi-v05-src
+          unzip -q /tmp/LumiVoiceBridge-v0.5-source.zip -d lumi-v05-src
 
       - name: Build debug APK
         working-directory: lumi-v05-src/LumiVoiceBridge-v0.5
